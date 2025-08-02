@@ -6,6 +6,8 @@ int main() {
     Renderer renderer;
 
     sim.step(1.0 / 60.0);
+    Particle particle;
+    particle.position = {0, 0};
     renderer.render();
 
     return 0;
