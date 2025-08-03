@@ -14,6 +14,7 @@ private:
     void update_grid(const std::vector<Particle>& particles);
     void render_grid()const;
     void clear_grid(const std::vector<Particle>& particles);
+    bool is_in_range(int x, int y)const;
     std::array<int, 2> get_particle_grid_position(const Particle& particle)const;
 
 };

@@ -19,7 +19,9 @@ void Renderer::render(const std::vector<Particle>& particles) {
 void Renderer::update_grid(const std::vector<Particle>& particles) {
     for (const Particle& particle : particles) {
         auto [x, y] = get_particle_grid_position(particle);
-        grid[y][x] = 'O';
+        if (is_in_range(x, y)) {
+            grid[y][x] = 'O';
+        }
     }
 }
 
@@ -33,7 +35,9 @@ void Renderer::render_grid() const{
 void Renderer::clear_grid(const std::vector<Particle>& particles) {
     for (const Particle& particle : particles) {
         auto [x, y] = get_particle_grid_position(particle);
-        grid[y][x] = ' ';
+        if (is_in_range(x, y)) {
+            grid[y][x] = ' ';
+        }
     }
 }
 
@@ -43,3 +47,6 @@ std::array<int, 2> Renderer::get_particle_grid_position(const Particle& particle
     return {x, y};
 }
 
+bool Renderer::is_in_range(int x, int y)const {
+    return 0 <= x && x < GRID_WIDTH && 0 <= y && y < GRID_HEIGHT;
+}
