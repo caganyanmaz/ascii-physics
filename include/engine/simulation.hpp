@@ -1,10 +1,13 @@
 #pragma once
 #include "particle.hpp"
+#include "surface.hpp"
 #include <vector>
 
 class Simulation {
     std::vector<Particle> particles;
+    std::vector<Surface> surfaces;
 public:
+    Simulation();
     void step(double dt);
     const std::vector<Particle>& get_particles()const;
     void add_particle(Particle&& particle);
@@ -13,5 +16,6 @@ public:
     double get_total_potential_energy()const;
     Vec2 get_total_momentum()const;
 private:
-    Vec2 calculate_particle_force(int particle_index)const;
+    Vec2 calculate_particle_force(const Particle& particle)const;
+    std::pair<bool, Vec2> process_collisions(const Particle& particle, Vec2& new_position)const;
 };

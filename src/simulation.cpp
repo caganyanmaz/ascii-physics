@@ -4,35 +4,57 @@
 
 constexpr static double BOUNDARY                              = 0.95;
 constexpr static double GRAVITY_ACCELERATION                  = 9.8;
-constexpr static double PARTICLE_ELECTROMAGNETISM_COEFFICIENT = 1;
+constexpr static double DRAG_COEFFICIENT = -1;
+const static Vec2 WIND_VELOCITY(0.1, -0.1);
+//constexpr static double PARTICLE_ELECTROMAGNETISM_COEFFICIENT = 1;
+
+Simulation::Simulation() {
+    // Adding boundaries
+    surfaces = {
+        Surface(Vec2(0, 0.9), Vec2(0, -1)),
+        Surface(Vec2(0, -0.9), Vec2(0, 1)),
+        Surface(Vec2(0.9, 0), Vec2(-1, 0)),
+        Surface(Vec2(-0.9, 0), Vec2(1, 0))
+    };
+}
 
 void Simulation::step(double dt) {
     std::vector<Vec2> forces(particles.size());
-    for (int i = 0; i < particles.size(); i++){
-        forces[i] = calculate_particle_force(i);
-    }
-    for (int i = 0; i < particles.size(); i++) {
-        Particle& particle = particles[i];
-        const Vec2 particle_acceleration = (1 / particle.mass) * forces[i];
-        particle.position += dt * particle.velocity + dt * dt * 0.5 * particle_acceleration;
-        particle.velocity += dt * particle_acceleration;
-        // Collision logic on boundaries
-        if (abs(particle.position.x) > BOUNDARY)
-            particle.velocity.x *= -1;
-        if (abs(particle.position.y) > BOUNDARY)
-            particle.velocity.y *= -1;
+    for (Particle& particle : particles) {
+        Vec2 new_position = particle.position + (dt * particle.velocity);
+        auto [collided, total_impact] = process_collisions(particle, new_position);
+        const Vec2 total_force  = collided ? total_impact : calculate_particle_force(particle);
+        const Vec2 acceleration = total_force / particle.mass;
+        particle.position = new_position;
+        particle.velocity += dt * acceleration;
     }
 }
 
-Vec2 Simulation::calculate_particle_force(int particle_index)const {
-    // Adding gravity
-    Vec2 res(0, GRAVITY_ACCELERATION * particles[particle_index].mass);
-    for (int i = 0; i < particles.size(); i++) {
-        if (i == particle_index)
-            continue;
-        Vec2 dist = particles[particle_index].position - particles[i].position;
-        res += pow(1 / dist.norm(), 3) *  dist;
+std::pair<bool, Vec2> Simulation::process_collisions(const Particle& particle, Vec2& new_position)const {
+    bool collided = false;
+    Vec2 total_impact(0, 0);
+    for (const Surface& surface : surfaces) {
+        double dist = (new_position - surface.position) * surface.normal;
+        if (dist < particle.radius && surface.normal * particle.velocity < 0) {
+            //std::cout << "Collision: " << particle << " " << surface << " " << dist << " "<< new_position<< "\n";
+            collided = true;
+            total_impact += surface.normal;
+        }
+        if (dist < particle.radius) {
+            const double change = particle.radius - dist;
+            new_position += change * surface.normal;
+        }
     }
+    return std::make_pair(collided, total_impact);
+}
+
+Vec2 Simulation::calculate_particle_force(const Particle& particle)const {
+    // Adding gravity
+    Vec2 res(0, GRAVITY_ACCELERATION * particle.mass);
+    // Adding drag
+    res += (DRAG_COEFFICIENT * particle.velocity.norm()) * particle.velocity;
+    // Adding wind effect
+    res += WIND_VELOCITY;
     return res;
 }
 

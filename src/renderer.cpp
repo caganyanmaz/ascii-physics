@@ -28,7 +28,7 @@ void Renderer::update_grid(const std::vector<Particle>& particles) {
     for (const Particle& particle : particles) {
         auto [x, y] = get_particle_grid_position(particle);
         if (is_in_range(x, y)) {
-            grid[y][x] = 'O';
+            grid[y][x] = '.';
         }
     }
 }
