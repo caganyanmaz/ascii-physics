@@ -16,6 +16,14 @@ void Renderer::render(const std::vector<Particle>& particles) {
     clear_grid(particles);
 }
 
+void Renderer::debug_render(const std::vector<Particle>& particles)const {
+    std::cout << "{\n";
+    for (const Particle& particle : particles) {
+        std::cout << particle << ",\n";
+    }
+    std::cout << "}\n";
+}
+
 void Renderer::update_grid(const std::vector<Particle>& particles) {
     for (const Particle& particle : particles) {
         auto [x, y] = get_particle_grid_position(particle);

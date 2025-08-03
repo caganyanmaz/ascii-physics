@@ -19,3 +19,11 @@ Vec2& operator+=(Vec2& a, Vec2 b) {
     a.y += b.y;
     return a;
 }
+
+Vec2 operator-(Vec2 a, Vec2 b) {
+    return Vec2(a.x - b.x, a.y - b.y);
+}
+
+std::ostream &operator<<(std::ostream &os, Vec2 const &v) {
+    return os << "(" <<v.x << ", " << v.y << ")";
+}

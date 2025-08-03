@@ -9,6 +9,7 @@ class Renderer {
     char grid[GRID_HEIGHT][GRID_WIDTH + 1];
 public:
     void render(const std::vector<Particle>& particles);
+    void debug_render(const std::vector<Particle>& particles)const;
     Renderer();
 private:
     void update_grid(const std::vector<Particle>& particles);
