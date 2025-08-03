@@ -17,5 +17,5 @@ public:
     Vec2 get_total_momentum()const;
 private:
     Vec2 calculate_particle_force(const Particle& particle)const;
-    std::pair<bool, Vec2> process_collisions(const Particle& particle, Vec2& new_position)const;
+    std::pair<bool, Vec2> process_collisions(const Particle& particle, Vec2& new_position, double dt)const;
 };
