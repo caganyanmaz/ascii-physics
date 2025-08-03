@@ -16,7 +16,7 @@ void print_physics_invariants(const Simulation& simulation) {
     double potential_energy = simulation.get_total_potential_energy();
     Vec2 momentum = simulation.get_total_momentum();
     std::cout << "Energy: " << (kinetic_energy + potential_energy) << "J (kinetic: " << kinetic_energy << "J, potential" << potential_energy << "J)\n";
-    std::cout << "Momentum: " << momentum << "\n";
+    std::cout << "Momentum: " << momentum << "kg . m / s\n";
 
 }
 
