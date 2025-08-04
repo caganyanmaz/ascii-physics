@@ -2,6 +2,7 @@
 #include <vector>
 #include <array>
 #include "particle.hpp"
+constexpr static int GRID_MULTIPLIER = 15;
 constexpr static int GRID_WIDTH  = 150;
 constexpr static int GRID_HEIGHT = 30;
 
@@ -16,7 +17,7 @@ private:
     void render_grid()const;
     void clear_grid(const std::vector<Particle>& particles);
     bool is_in_range(int x, int y)const;
-    std::array<int, 2> get_particle_grid_position(const Particle& particle)const;
+    std::vector<std::array<int, 2>> get_particle_grid_positions(const Particle& particle)const;
 
 };
 

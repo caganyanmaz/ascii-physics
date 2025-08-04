@@ -32,10 +32,19 @@ int main() {
     srand(42);
     for (int i = 0; i < 100; i++) {
         Particle particle;
-        particle.position = {_random() - 0.5, _random() * 0.1 - 0.9};
+        particle.position = {(_random() - 0.5) * 7, _random() * 0.1 - 0.9};
         //particle.velocity = {_random() * 0.02 - 0.01, _random() * 0.02 - 0.01};
         sim.add_particle(std::move(particle));
     }
+    for (int i = 0; i < 5; i++) {
+        Particle particle;
+        particle.position = {(_random() - 0.5) * 9, (_random() - 0.5) + 0.4};
+        particle.fixed = true;
+        particle.symbol = 'O';
+        particle.radius = 0.3;
+        sim.add_particle(std::move(particle));
+    }
+    sim.init();
 
     int frame_counter = 0;
     auto last = clock::now();

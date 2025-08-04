@@ -26,9 +26,11 @@ void Renderer::debug_render(const std::vector<Particle>& particles)const {
 
 void Renderer::update_grid(const std::vector<Particle>& particles) {
     for (const Particle& particle : particles) {
-        auto [x, y] = get_particle_grid_position(particle);
-        if (is_in_range(x, y)) {
-            grid[y][x] = '.';
+        auto positions = get_particle_grid_positions(particle);
+        for (auto [x, y] : positions) {
+            if (is_in_range(x, y)) {
+                grid[y][x] = particle.symbol;
+            }
         }
     }
 }
@@ -42,17 +44,29 @@ void Renderer::render_grid() const{
 
 void Renderer::clear_grid(const std::vector<Particle>& particles) {
     for (const Particle& particle : particles) {
-        auto [x, y] = get_particle_grid_position(particle);
-        if (is_in_range(x, y)) {
-            grid[y][x] = ' ';
+        auto positions = get_particle_grid_positions(particle);
+        for (auto [x, y] : positions) {
+            if (is_in_range(x, y)) {
+                grid[y][x] = ' ';
+            }
         }
     }
 }
 
-std::array<int, 2> Renderer::get_particle_grid_position(const Particle& particle) const{
-    int x = (particle.position.x + 1) * GRID_WIDTH * 0.5;
-    int y = (particle.position.y + 1) * GRID_HEIGHT * 0.5;
-    return {x, y};
+std::vector<std::array<int, 2>> Renderer::get_particle_grid_positions(const Particle& particle) const{
+    int center_x = (particle.position.x * GRID_MULTIPLIER) + GRID_WIDTH * 0.5;
+    int center_y = (particle.position.y * GRID_MULTIPLIER) + GRID_HEIGHT * 0.5;
+    double scaled_r = particle.radius * GRID_MULTIPLIER;
+    double scaled_r_squared = scaled_r * scaled_r;
+    std::vector<std::array<int, 2>> res;
+    for (int y = center_y - scaled_r - 1; y <= center_y + scaled_r + 1; y++) {
+        for (int x = center_x - scaled_r - 1; x <= center_x + scaled_r + 1; x++) {
+            if ((y - center_y) * (y - center_y) + (x - center_x) * (x - center_x) <= (int)scaled_r_squared) {
+                res.push_back({x, y});
+            }
+        }
+    }
+    return res;
 }
 
 bool Renderer::is_in_range(int x, int y)const {

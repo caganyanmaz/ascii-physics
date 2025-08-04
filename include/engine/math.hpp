@@ -9,6 +9,10 @@ struct Vec2 {
     Vec2() : Vec2(0, 0) {}
     inline double norm_squared()const { return x * x + y * y; }
     inline double norm()const { return sqrt(norm_squared()); }
+    inline Vec2 normalize()const {
+        double _norm = norm();
+        return Vec2(x / _norm, y / _norm);
+    }
 };
 
 Vec2 operator+(const Vec2& a, const Vec2& b);

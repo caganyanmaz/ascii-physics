@@ -6,8 +6,11 @@
 class Simulation {
     std::vector<Particle> particles;
     std::vector<Surface> surfaces;
+    std::vector<std::reference_wrapper<Particle>> static_particles;
+    std::vector<std::reference_wrapper<Particle>> dynamic_particles;
 public:
     Simulation();
+    void init();
     void step(double dt);
     const std::vector<Particle>& get_particles()const;
     void add_particle(Particle&& particle);
@@ -18,4 +21,6 @@ public:
 private:
     Vec2 calculate_particle_force(const Particle& particle)const;
     std::pair<bool, Vec2> process_collisions(const Particle& particle, Vec2& new_position, double dt)const;
+    std::pair<bool, Vec2> process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const;
+    std::pair<bool, Vec2> process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const;
 };
