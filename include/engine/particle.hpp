@@ -5,6 +5,7 @@
 struct Particle {
     Vec2 position;
     Vec2 velocity;
+    Vec2 force_accumulator;
     double mass;
     double radius;
     char symbol;

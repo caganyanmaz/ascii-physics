@@ -3,10 +3,17 @@
 #include <iostream>
 
 template<bool gravity, bool drag, bool wind>
-Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) : config(std::move(config)), particles(std::move(particles)){
+Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
+    :   config(std::move(config)), 
+        particles(std::move(particles)), 
+        gravity_generator(config.gravitational_acceleration), 
+        drag_generator(config.drag_coefficient), 
+        wind_generator(config.wind_velocity) 
+{
     if (config.gravity != gravity || config.drag != drag || config.wind != wind) {
         throw std::invalid_argument("Config input and the template doesn't match");
     }
+
     // Adding boundaries
     surfaces = {
         Surface(Vec2(0, 0.9), Vec2(0, -1)),
@@ -27,14 +34,35 @@ Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config, std::vect
 
 template<bool gravity, bool drag, bool wind>
 void Simulation<gravity, drag, wind>::step(double dt) {
-    std::vector<Vec2> forces(particles.size());
+    clear_forces();
+    add_forces();
     for (Particle& particle : dynamic_particles) {
         Vec2 new_position = particle.position + (dt * particle.velocity);
         auto [collided, total_impact] = process_collisions(particle, new_position, dt);
-        const Vec2 total_force  = collided ? total_impact : calculate_particle_force(particle);
+        const Vec2 total_force  = collided ? total_impact : particle.force_accumulator;
         const Vec2 acceleration = total_force / particle.mass;
         particle.position = new_position;
         particle.velocity += dt * acceleration;
+    }
+}
+
+template<bool gravity, bool drag, bool wind>
+void Simulation<gravity, drag, wind>::clear_forces() {
+    for (Particle& particle : particles) {
+        particle.force_accumulator = Vec2(0, 0);
+    }
+}
+
+template<bool gravity, bool drag, bool wind>
+void Simulation<gravity, drag, wind>::add_forces() {    
+    if constexpr (gravity) {
+        gravity_generator.generate(particles);
+    }
+    if constexpr (drag) {
+        drag_generator.generate(particles);
+    }
+    if constexpr (wind) {
+        wind_generator.generate(particles);
     }
 }
 
@@ -89,24 +117,6 @@ std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_particle
     const double rollback_needed    = (min_distance - current_distance) / (-(normal * relative_velocity));
     new_position += rollback_needed * particle.velocity;  // TODO: Fix this so it works for moving particles as well
     return std::make_pair(true, impact_coefficient * normal / dt);
-}
-
-template<bool gravity, bool drag, bool wind>
-Vec2 Simulation<gravity, drag, wind>::calculate_particle_force(const Particle& particle)const {
-    // Adding gravity
-    Vec2 res(0, 0);
-    if constexpr (gravity) {
-        res += Vec2(0, config.gravitational_acceleration * particle.mass);
-    }
-    // Adding drag
-    if constexpr (drag) {
-        res += (config.drag_coefficient * particle.velocity.norm()) * particle.velocity;
-    }
-    // Adding wind effect
-    if constexpr (drag) {
-        res += config.wind_velocity;
-    }
-    return res;
 }
 
 template<bool gravity, bool drag, bool wind>
