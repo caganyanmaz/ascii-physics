@@ -1,18 +1,21 @@
 #include "engine/simulation.hpp"
+#include "engine/wind_generator.hpp"
+#include "engine/gravity_generator.hpp"
+#include "engine/simulation_config.hpp"
 #include <cmath>
 #include <iostream>
 
-template<bool gravity, bool drag, bool wind>
-Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
+Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
     :   config(std::move(config)), 
-        particles(std::move(particles)), 
-        gravity_generator(config.gravitational_acceleration), 
-        drag_generator(config.drag_coefficient), 
-        wind_generator(config.wind_velocity) 
+        particles(std::move(particles))
 {
-    if (config.gravity != gravity || config.drag != drag || config.wind != wind) {
-        throw std::invalid_argument("Config input and the template doesn't match");
-    }
+    // Adding force generators
+    if (config.gravity)
+        force_generators.push_back(std::unique_ptr<ForceGenerator>(new GravityGenerator(config.gravitational_acceleration)));
+    if (config.drag)
+        force_generators.push_back(std::unique_ptr<ForceGenerator>(new DragGenerator(config.drag_coefficient)));
+    if (config.wind)
+        force_generators.push_back(std::unique_ptr<ForceGenerator>(new WindGenerator(config.wind_velocity)));
 
     // Adding boundaries
     surfaces = {
@@ -32,8 +35,7 @@ Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config, std::vect
     }
 }
 
-template<bool gravity, bool drag, bool wind>
-void Simulation<gravity, drag, wind>::step(double dt) {
+void Simulation::step(double dt) {
     clear_forces();
     add_forces();
     for (Particle& particle : dynamic_particles) {
@@ -46,28 +48,19 @@ void Simulation<gravity, drag, wind>::step(double dt) {
     }
 }
 
-template<bool gravity, bool drag, bool wind>
-void Simulation<gravity, drag, wind>::clear_forces() {
+void Simulation::clear_forces() {
     for (Particle& particle : particles) {
         particle.force_accumulator = Vec2(0, 0);
     }
 }
 
-template<bool gravity, bool drag, bool wind>
-void Simulation<gravity, drag, wind>::add_forces() {    
-    if constexpr (gravity) {
-        gravity_generator.generate(particles);
-    }
-    if constexpr (drag) {
-        drag_generator.generate(particles);
-    }
-    if constexpr (wind) {
-        wind_generator.generate(particles);
+void Simulation::add_forces() {    
+    for (std::unique_ptr<ForceGenerator>& force_generator : force_generators) {
+        force_generator->generate(particles);
     }
 }
 
-template<bool gravity, bool drag, bool wind>
-std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_collisions(const Particle& particle, Vec2& new_position, double dt)const {
+std::pair<bool, Vec2> Simulation::process_collisions(const Particle& particle, Vec2& new_position, double dt)const {
     bool collided = false;
     Vec2 total_impact(0, 0);
     for (const Surface& surface : surfaces) {
@@ -83,8 +76,7 @@ std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_collisions(const 
     return std::make_pair(collided, total_impact);
 }
 
-template<bool gravity, bool drag, bool wind>
-std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const {
+std::pair<bool, Vec2> Simulation::process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const {
     double dist = (new_position - surface.position) * surface.normal;
     if (dist > particle.radius) {
         return std::make_pair(false, Vec2(0, 0));
@@ -99,8 +91,7 @@ std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_surface_
     return std::make_pair(true, impact_coefficient * surface.normal / dt);
 }
 
-template<bool gravity, bool drag, bool wind>
-std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const {
+std::pair<bool, Vec2> Simulation::process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const {
     const double min_distance     = particle.radius + other_particle.radius;
     const Vec2 current_difference = particle.position - other_particle.position;
     const double current_distance = current_difference.norm();
@@ -119,13 +110,11 @@ std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_particle
     return std::make_pair(true, impact_coefficient * normal / dt);
 }
 
-template<bool gravity, bool drag, bool wind>
-double Simulation<gravity, drag, wind>::get_total_energy()const {
+double Simulation::get_total_energy()const {
     return get_total_kinetic_energy() + get_total_potential_energy();
 }
 
-template<bool gravity, bool drag, bool wind>
-double Simulation<gravity, drag, wind>::get_total_kinetic_energy()const {
+double Simulation::get_total_kinetic_energy()const {
     double res = 0;
     for (const Particle& particle : particles) {
         res += 0.5 * particle.mass * particle.velocity.norm_squared();
@@ -133,8 +122,7 @@ double Simulation<gravity, drag, wind>::get_total_kinetic_energy()const {
     return res;
 }
 
-template<bool gravity, bool drag, bool wind>
-double Simulation<gravity, drag, wind>::get_total_potential_energy()const {
+double Simulation::get_total_potential_energy()const {
     double res = 0;
     for (const Particle& particle : particles) {
         res += particle.mass * (1 - particle.position.y) * config.gravitational_acceleration;
@@ -142,8 +130,7 @@ double Simulation<gravity, drag, wind>::get_total_potential_energy()const {
     return res;
 }
 
-template<bool gravity, bool drag, bool wind>
-Vec2 Simulation<gravity, drag, wind>::get_total_momentum()const {
+Vec2 Simulation::get_total_momentum()const {
     Vec2 res(0, 0);
     for (const Particle& particle : particles) {
         res += particle.mass * particle.velocity;
@@ -151,17 +138,7 @@ Vec2 Simulation<gravity, drag, wind>::get_total_momentum()const {
     return res;
 }
 
-template<bool gravity, bool drag, bool wind>
-const std::vector<Particle>& Simulation<gravity, drag, wind>::get_particles()const {
+const std::vector<Particle>& Simulation::get_particles()const {
     return particles;
 }
 
-
-template class Simulation<false, false, false>;
-template class Simulation<false, false, true >;
-template class Simulation<false, true , false>;
-template class Simulation<false, true , true>;
-template class Simulation<true , false, false>;
-template class Simulation<true , false, true >;
-template class Simulation<true , true , false>;
-template class Simulation<true , true , true>;

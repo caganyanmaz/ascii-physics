@@ -11,7 +11,7 @@ TEST(SimulationTest, ParticleSimple) {
     simulation_config.gravity = false;
     simulation_config.drag = false;
     simulation_config.wind = false;
-    Simulation<false, false, false> sim(std::move(simulation_config), std::move(particles));
+    Simulation sim(std::move(simulation_config), std::move(particles));
     for (int i = 0; i < 100; i++) {
         sim.step(0.01);
     }

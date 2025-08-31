@@ -12,8 +12,7 @@ constexpr static int FRAMES_PER_RENDER = 100;
 using namespace std::literals::chrono_literals;
 //constexpr static auto WAIT_DURATION = 70us;
 
-template<bool gravity, bool drag, bool wind> 
-void print_physics_invariants(const Simulation<gravity, drag, wind>& simulation) {
+void print_physics_invariants(const Simulation& simulation) {
     double kinetic_energy   = simulation.get_total_kinetic_energy();
     double potential_energy = simulation.get_total_potential_energy();
     Vec2 momentum = simulation.get_total_momentum();
@@ -26,7 +25,7 @@ double _random() {
     return ((double) rand() / (RAND_MAX));
 }
 
-Simulation<true, true, true> create_simulation();
+Simulation create_simulation();
 
 
 
@@ -34,7 +33,7 @@ int main() {
     srand(42);
     using clock = std::chrono::steady_clock;
     Renderer renderer;
-    Simulation<true, true, true> sim = create_simulation();
+    Simulation sim = create_simulation();
 
     int frame_counter = 0;
     auto last = clock::now();
@@ -58,7 +57,7 @@ int main() {
     return 0;
 }
 
-Simulation<true, true, true> create_simulation() {
+Simulation create_simulation() {
     std::vector<Particle> particles;
     for (int i = 0; i < 100; i++) {
         Particle particle;
@@ -75,6 +74,6 @@ Simulation<true, true, true> create_simulation() {
         particles.push_back(particle);
     }
     SimulationConfig simulation_config;
-    return Simulation<true, true, true>(std::move(simulation_config), std::move(particles));
+    return Simulation(std::move(simulation_config), std::move(particles));
 }
 
