@@ -4,6 +4,9 @@
 
 template<bool gravity, bool drag, bool wind>
 Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config) : config(std::move(config)){
+    if (config.gravity != gravity || config.drag != drag || config.wind != wind) {
+        throw std::invalid_argument("Config input and the template doesn't match");
+    }
     // Adding boundaries
     surfaces = {
         Surface(Vec2(0, 0.9), Vec2(0, -1)),
