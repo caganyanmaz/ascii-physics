@@ -12,7 +12,8 @@ constexpr static int FRAMES_PER_RENDER = 100;
 using namespace std::literals::chrono_literals;
 //constexpr static auto WAIT_DURATION = 70us;
 
-void print_physics_invariants(const Simulation& simulation) {
+template<bool gravity, bool drag, bool wind> 
+void print_physics_invariants(const Simulation<gravity, drag, wind>& simulation) {
     double kinetic_energy   = simulation.get_total_kinetic_energy();
     double potential_energy = simulation.get_total_potential_energy();
     Vec2 momentum = simulation.get_total_momentum();
@@ -27,7 +28,7 @@ double _random() {
 
 int main() {
     using clock = std::chrono::steady_clock;
-    Simulation sim;
+    Simulation<true, true, true> sim;
     Renderer renderer;
     srand(42);
     for (int i = 0; i < 100; i++) {

@@ -3,6 +3,7 @@
 #include "surface.hpp"
 #include <vector>
 
+template<bool gravity, bool drag, bool wind>
 class Simulation {
     std::vector<Particle> particles;
     std::vector<Surface> surfaces;
@@ -24,3 +25,14 @@ private:
     std::pair<bool, Vec2> process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const;
     std::pair<bool, Vec2> process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const;
 };
+
+
+extern template class Simulation<false, false, false>;
+extern template class Simulation<false, false, true >;
+extern template class Simulation<false, true , false>;
+extern template class Simulation<false, true , true>;
+extern template class Simulation<true , false, false>;
+extern template class Simulation<true , false, true >;
+extern template class Simulation<true , true , false>;
+extern template class Simulation<true , true , true>;
+

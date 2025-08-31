@@ -9,7 +9,8 @@ constexpr static double PARTICLE_PARTICLE_RESTITUTION = 1;
 const static Vec2 WIND_VELOCITY(0.1, -0.1);
 //constexpr static double PARTICLE_ELECTROMAGNETISM_COEFFICIENT = 1;
 
-Simulation::Simulation() {
+template<bool gravity, bool drag, bool wind>
+Simulation<gravity, drag, wind>::Simulation() {
     // Adding boundaries
     surfaces = {
         Surface(Vec2(0, 0.9), Vec2(0, -1)),
@@ -19,7 +20,8 @@ Simulation::Simulation() {
     };
 }
 
-void Simulation::init() {
+template<bool gravity, bool drag, bool wind>
+void Simulation<gravity, drag, wind>::init() {
     for (Particle& particle : particles) {
         if (particle.fixed) {
             static_particles.push_back(particle);
@@ -29,7 +31,8 @@ void Simulation::init() {
     }
 }
 
-void Simulation::step(double dt) {
+template<bool gravity, bool drag, bool wind>
+void Simulation<gravity, drag, wind>::step(double dt) {
     std::vector<Vec2> forces(particles.size());
     for (Particle& particle : dynamic_particles) {
         Vec2 new_position = particle.position + (dt * particle.velocity);
@@ -41,7 +44,8 @@ void Simulation::step(double dt) {
     }
 }
 
-std::pair<bool, Vec2> Simulation::process_collisions(const Particle& particle, Vec2& new_position, double dt)const {
+template<bool gravity, bool drag, bool wind>
+std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_collisions(const Particle& particle, Vec2& new_position, double dt)const {
     bool collided = false;
     Vec2 total_impact(0, 0);
     for (const Surface& surface : surfaces) {
@@ -57,7 +61,8 @@ std::pair<bool, Vec2> Simulation::process_collisions(const Particle& particle, V
     return std::make_pair(collided, total_impact);
 }
 
-std::pair<bool, Vec2> Simulation::process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const {
+template<bool gravity, bool drag, bool wind>
+std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const {
     double dist = (new_position - surface.position) * surface.normal;
     if (dist > particle.radius) {
         return std::make_pair(false, Vec2(0, 0));
@@ -72,7 +77,8 @@ std::pair<bool, Vec2> Simulation::process_particle_surface_collision(const Parti
     return std::make_pair(true, impact_coefficient * surface.normal / dt);
 }
 
-std::pair<bool, Vec2> Simulation::process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const {
+template<bool gravity, bool drag, bool wind>
+std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const {
     const double min_distance     = particle.radius + other_particle.radius;
     const Vec2 current_difference = particle.position - other_particle.position;
     const double current_distance = current_difference.norm();
@@ -91,21 +97,31 @@ std::pair<bool, Vec2> Simulation::process_particle_particle_collision(const Part
     return std::make_pair(true, impact_coefficient * normal / dt);
 }
 
-Vec2 Simulation::calculate_particle_force(const Particle& particle)const {
+template<bool gravity, bool drag, bool wind>
+Vec2 Simulation<gravity, drag, wind>::calculate_particle_force(const Particle& particle)const {
     // Adding gravity
-    Vec2 res(0, GRAVITY_ACCELERATION * particle.mass);
+    Vec2 res(0, 0);
+    if constexpr (gravity) {
+        res += Vec2(0, GRAVITY_ACCELERATION * particle.mass);
+    }
     // Adding drag
-    res += (DRAG_COEFFICIENT * particle.velocity.norm()) * particle.velocity;
+    if constexpr (drag) {
+        res += (DRAG_COEFFICIENT * particle.velocity.norm()) * particle.velocity;
+    }
     // Adding wind effect
-    res += WIND_VELOCITY;
+    if constexpr (drag) {
+        res += WIND_VELOCITY;
+    }
     return res;
 }
 
-double Simulation::get_total_energy()const {
+template<bool gravity, bool drag, bool wind>
+double Simulation<gravity, drag, wind>::get_total_energy()const {
     return get_total_kinetic_energy() + get_total_potential_energy();
 }
 
-double Simulation::get_total_kinetic_energy()const {
+template<bool gravity, bool drag, bool wind>
+double Simulation<gravity, drag, wind>::get_total_kinetic_energy()const {
     double res = 0;
     for (const Particle& particle : particles) {
         res += 0.5 * particle.mass * particle.velocity.norm_squared();
@@ -113,7 +129,8 @@ double Simulation::get_total_kinetic_energy()const {
     return res;
 }
 
-double Simulation::get_total_potential_energy()const {
+template<bool gravity, bool drag, bool wind>
+double Simulation<gravity, drag, wind>::get_total_potential_energy()const {
     double res = 0;
     for (const Particle& particle : particles) {
         res += particle.mass * (1 - particle.position.y) * GRAVITY_ACCELERATION;
@@ -121,7 +138,8 @@ double Simulation::get_total_potential_energy()const {
     return res;
 }
 
-Vec2 Simulation::get_total_momentum()const {
+template<bool gravity, bool drag, bool wind>
+Vec2 Simulation<gravity, drag, wind>::get_total_momentum()const {
     Vec2 res(0, 0);
     for (const Particle& particle : particles) {
         res += particle.mass * particle.velocity;
@@ -129,10 +147,21 @@ Vec2 Simulation::get_total_momentum()const {
     return res;
 }
 
-const std::vector<Particle>& Simulation::get_particles()const {
+template<bool gravity, bool drag, bool wind>
+const std::vector<Particle>& Simulation<gravity, drag, wind>::get_particles()const {
     return particles;
 }
 
-void Simulation::add_particle(Particle&& particle) {
+template<bool gravity, bool drag, bool wind>
+void Simulation<gravity, drag, wind>::add_particle(Particle&& particle) {
     particles.push_back(std::move(particle));
 }
+
+template class Simulation<false, false, false>;
+template class Simulation<false, false, true >;
+template class Simulation<false, true , false>;
+template class Simulation<false, true , true>;
+template class Simulation<true , false, false>;
+template class Simulation<true , false, true >;
+template class Simulation<true , true , false>;
+template class Simulation<true , true , true>;

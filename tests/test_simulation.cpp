@@ -3,7 +3,7 @@
 
 #define MACHINE_EPSILON 1e-15
 TEST(SimulationTest, ParticleSimple) {
-    Simulation sim;
+    Simulation<false, false, false> sim;
     Particle particle;
     particle.velocity = Vec2(0.5, -0.1);
     sim.add_particle(std::move(particle));
