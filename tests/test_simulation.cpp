@@ -10,7 +10,6 @@ TEST(SimulationTest, ParticleSimple) {
     sim.add_particle(std::move(particle));
     sim.init();
     for (int i = 0; i < 100; i++) {
-        std::cout << "Stepping...\n";
         sim.step(0.01);
     }
     ASSERT_EQ(sim.get_particles().size(), 1);

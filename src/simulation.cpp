@@ -2,15 +2,8 @@
 #include <cmath>
 #include <iostream>
 
-constexpr static double GRAVITY_ACCELERATION                  = 9.8;
-constexpr static double DRAG_COEFFICIENT = -1;
-constexpr static double PARTICLE_SURFACE_RESTITUTION = 0.99;
-constexpr static double PARTICLE_PARTICLE_RESTITUTION = 1;
-const static Vec2 WIND_VELOCITY(0.1, -0.1);
-//constexpr static double PARTICLE_ELECTROMAGNETISM_COEFFICIENT = 1;
-
 template<bool gravity, bool drag, bool wind>
-Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& simulation_config) : simulation_config(std::move(simulation_config)){
+Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config) : config(std::move(config)){
     // Adding boundaries
     surfaces = {
         Surface(Vec2(0, 0.9), Vec2(0, -1)),
@@ -71,7 +64,7 @@ std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_surface_
         new_position += (particle.radius - dist) * surface.normal;
         return std::make_pair(false, Vec2(0, 0));
     }
-    const double impact_coefficient = -(particle.velocity * surface.normal) * (PARTICLE_SURFACE_RESTITUTION + 1) * particle.mass;
+    const double impact_coefficient = -(particle.velocity * surface.normal) * (config.particle_surface_restitution + 1) * particle.mass;
     const double velocity_change = (particle.radius - dist) / (particle.velocity * surface.normal);
     new_position += velocity_change * particle.velocity;
     return std::make_pair(true, impact_coefficient * surface.normal / dt);
@@ -91,7 +84,7 @@ std::pair<bool, Vec2> Simulation<gravity, drag, wind>::process_particle_particle
         new_position += (min_distance - current_distance) * normal;
         return std::make_pair(false, Vec2(0, 0));
     }
-    const double impact_coefficient = -(relative_velocity * normal) * (PARTICLE_PARTICLE_RESTITUTION + 1) * particle.mass;
+    const double impact_coefficient = -(relative_velocity * normal) * (config.particle_particle_restitution + 1) * particle.mass;
     const double rollback_needed    = (min_distance - current_distance) / (-(normal * relative_velocity));
     new_position += rollback_needed * particle.velocity;  // TODO: Fix this so it works for moving particles as well
     return std::make_pair(true, impact_coefficient * normal / dt);
@@ -102,15 +95,15 @@ Vec2 Simulation<gravity, drag, wind>::calculate_particle_force(const Particle& p
     // Adding gravity
     Vec2 res(0, 0);
     if constexpr (gravity) {
-        res += Vec2(0, GRAVITY_ACCELERATION * particle.mass);
+        res += Vec2(0, config.gravitational_acceleration * particle.mass);
     }
     // Adding drag
     if constexpr (drag) {
-        res += (DRAG_COEFFICIENT * particle.velocity.norm()) * particle.velocity;
+        res += (config.drag_coefficient * particle.velocity.norm()) * particle.velocity;
     }
     // Adding wind effect
     if constexpr (drag) {
-        res += WIND_VELOCITY;
+        res += config.wind_velocity;
     }
     return res;
 }
@@ -133,7 +126,7 @@ template<bool gravity, bool drag, bool wind>
 double Simulation<gravity, drag, wind>::get_total_potential_energy()const {
     double res = 0;
     for (const Particle& particle : particles) {
-        res += particle.mass * (1 - particle.position.y) * GRAVITY_ACCELERATION;
+        res += particle.mass * (1 - particle.position.y) * config.gravitational_acceleration;
     }
     return res;
 }

@@ -2,7 +2,7 @@
 #include "math.hpp"
 
 struct SimulationConfig {
-    double gravity_acceleration = 9.8;
+    double gravitational_acceleration = 9.8;
     double drag_coefficient = -1;
     double particle_surface_restitution = 0.99;
     double particle_particle_restitution = 1;

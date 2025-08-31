@@ -10,9 +10,9 @@ class Simulation {
     std::vector<Surface> surfaces;
     std::vector<std::reference_wrapper<Particle>> static_particles;
     std::vector<std::reference_wrapper<Particle>> dynamic_particles;
-    const SimulationConfig simulation_config;
+    const SimulationConfig config;
 public:
-    Simulation(SimulationConfig&& simulation_config);
+    Simulation(SimulationConfig&& config);
     void init();
     void step(double dt);
     const std::vector<Particle>& get_particles()const;
