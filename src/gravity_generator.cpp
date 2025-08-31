@@ -4,6 +4,6 @@ GravityGenerator::GravityGenerator(double gravitational_acceleration) : gravitat
 
 void GravityGenerator::generate(std::vector<Particle>& particles) {
     for (Particle& particle : particles) {
-        particle.force_accumulator += Vec2(0, particle.mass * gravitational_acceleration);
+        particle.force_accumulator += Vec2<double>(0, particle.mass * gravitational_acceleration);
     }
 }

@@ -32,10 +32,12 @@ if(ENABLE_CUDA)
 endif()
 
 # ---------------------------
-# Demo executable
+# Demo executables
 # ---------------------------
 add_executable(demo_ascii apps/demo_ascii.cpp)
 target_link_libraries(demo_ascii PRIVATE engine)
+add_executable(demo_spring apps/demo_spring.cpp)
+target_link_libraries(demo_spring PRIVATE engine)
 
 # ---------------------------
 # Tests (GoogleTest)

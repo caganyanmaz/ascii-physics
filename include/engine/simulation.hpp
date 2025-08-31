@@ -17,14 +17,15 @@ public:
     Simulation(SimulationConfig&& config, std::vector<Particle>&& particles);
     void step(double dt);
     const std::vector<Particle>& get_particles()const;
+    void add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length);
     double get_total_energy()const;
     double get_total_kinetic_energy()const;
     double get_total_potential_energy()const;
-    Vec2 get_total_momentum()const;
-private:
-    std::pair<bool, Vec2> process_collisions(const Particle& particle, Vec2& new_position, double dt)const;
-    std::pair<bool, Vec2> process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const;
-    std::pair<bool, Vec2> process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const;
+    Vec2<double> get_total_momentum()const;
+private:  
+    std::pair<bool, Vec2<double>> process_collisions(const Particle& particle, Vec2<double>& new_position, double dt)const;
+    std::pair<bool, Vec2<double>> process_particle_particle_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Particle& other_particle)const;
+    std::pair<bool, Vec2<double>> process_particle_surface_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Surface& surface)const;
     void clear_forces();
     void add_forces();
 };

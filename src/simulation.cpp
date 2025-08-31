@@ -1,5 +1,6 @@
 #include "engine/simulation.hpp"
 #include "engine/wind_generator.hpp"
+#include "engine/spring_generator.hpp"
 #include "engine/gravity_generator.hpp"
 #include "engine/simulation_config.hpp"
 #include <cmath>
@@ -19,10 +20,10 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
 
     // Adding boundaries
     surfaces = {
-        Surface(Vec2(0, 0.9), Vec2(0, -1)),
-        Surface(Vec2(0, -0.9), Vec2(0, 1)),
-        Surface(Vec2(4.5, 0), Vec2(-1, 0)),
-        Surface(Vec2(-4.5, 0), Vec2(1, 0))
+        Surface(Vec2<double>(0, 0.9), Vec2<double>(0, -1)),
+        Surface(Vec2<double>(0, -0.9), Vec2<double>(0, 1)),
+        Surface(Vec2<double>(4.5, 0), Vec2<double>(-1, 0)),
+        Surface(Vec2<double>(-4.5, 0), Vec2<double>(1, 0))
     };
 
     // Setting up particles 
@@ -39,18 +40,22 @@ void Simulation::step(double dt) {
     clear_forces();
     add_forces();
     for (Particle& particle : dynamic_particles) {
-        Vec2 new_position = particle.position + (dt * particle.velocity);
+        Vec2<double> new_position = particle.position + (dt * particle.velocity);
         auto [collided, total_impact] = process_collisions(particle, new_position, dt);
-        const Vec2 total_force  = collided ? total_impact : particle.force_accumulator;
-        const Vec2 acceleration = total_force / particle.mass;
+        const Vec2<double> total_force  = collided ? total_impact : particle.force_accumulator;
+        const Vec2<double> acceleration = total_force / particle.mass;
         particle.position = new_position;
         particle.velocity += dt * acceleration;
     }
 }
 
+void Simulation::add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length) {
+    force_generators.push_back(std::unique_ptr<ForceGenerator>(new SpringGenerator(a_id, b_id, spring_constant, damping_constant, rest_length)));
+}
+
 void Simulation::clear_forces() {
     for (Particle& particle : particles) {
-        particle.force_accumulator = Vec2(0, 0);
+        particle.force_accumulator = Vec2<double>(0, 0);
     }
 }
 
@@ -60,9 +65,9 @@ void Simulation::add_forces() {
     }
 }
 
-std::pair<bool, Vec2> Simulation::process_collisions(const Particle& particle, Vec2& new_position, double dt)const {
+std::pair<bool, Vec2<double>> Simulation::process_collisions(const Particle& particle, Vec2<double>& new_position, double dt)const {
     bool collided = false;
-    Vec2 total_impact(0, 0);
+    Vec2<double> total_impact(0, 0);
     for (const Surface& surface : surfaces) {
         auto [ collided_with_surface, surface_impact ] = process_particle_surface_collision(particle, new_position, dt, surface);
         collided = collided || collided_with_surface;
@@ -76,14 +81,14 @@ std::pair<bool, Vec2> Simulation::process_collisions(const Particle& particle, V
     return std::make_pair(collided, total_impact);
 }
 
-std::pair<bool, Vec2> Simulation::process_particle_surface_collision(const Particle& particle, Vec2& new_position, double dt, const Surface& surface)const {
+std::pair<bool, Vec2<double>> Simulation::process_particle_surface_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Surface& surface)const {
     double dist = (new_position - surface.position) * surface.normal;
     if (dist > particle.radius) {
-        return std::make_pair(false, Vec2(0, 0));
+        return std::make_pair(false, Vec2<double>(0, 0));
     }
     if (surface.normal * particle.velocity >= 0) {
         new_position += (particle.radius - dist) * surface.normal;
-        return std::make_pair(false, Vec2(0, 0));
+        return std::make_pair(false, Vec2<double>(0, 0));
     }
     const double impact_coefficient = -(particle.velocity * surface.normal) * (config.particle_surface_restitution + 1) * particle.mass;
     const double velocity_change = (particle.radius - dist) / (particle.velocity * surface.normal);
@@ -91,18 +96,18 @@ std::pair<bool, Vec2> Simulation::process_particle_surface_collision(const Parti
     return std::make_pair(true, impact_coefficient * surface.normal / dt);
 }
 
-std::pair<bool, Vec2> Simulation::process_particle_particle_collision(const Particle& particle, Vec2& new_position, double dt, const Particle& other_particle)const {
+std::pair<bool, Vec2<double>> Simulation::process_particle_particle_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Particle& other_particle)const {
     const double min_distance     = particle.radius + other_particle.radius;
-    const Vec2 current_difference = particle.position - other_particle.position;
+    const Vec2<double> current_difference = particle.position - other_particle.position;
     const double current_distance = current_difference.norm();
-    const Vec2 relative_velocity  = particle.velocity - other_particle.velocity;
-    const Vec2 normal             = current_difference.normalize();
+    const Vec2<double> relative_velocity  = particle.velocity - other_particle.velocity;
+    const Vec2<double> normal             = current_difference.normalize();
     if (current_distance > min_distance) {
-        return std::make_pair(false, Vec2(0, 0));
+        return std::make_pair(false, Vec2<double>(0, 0));
     }
     if ((normal * relative_velocity) >= 0) {
         new_position += (min_distance - current_distance) * normal;
-        return std::make_pair(false, Vec2(0, 0));
+        return std::make_pair(false, Vec2<double>(0, 0));
     }
     const double impact_coefficient = -(relative_velocity * normal) * (config.particle_particle_restitution + 1) * particle.mass;
     const double rollback_needed    = (min_distance - current_distance) / (-(normal * relative_velocity));
@@ -130,8 +135,8 @@ double Simulation::get_total_potential_energy()const {
     return res;
 }
 
-Vec2 Simulation::get_total_momentum()const {
-    Vec2 res(0, 0);
+Vec2<double> Simulation::get_total_momentum()const {
+    Vec2<double> res(0, 0);
     for (const Particle& particle : particles) {
         res += particle.mass * particle.velocity;
     }

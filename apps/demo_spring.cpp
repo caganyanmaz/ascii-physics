@@ -15,8 +15,8 @@ using namespace std::literals::chrono_literals;
 void print_physics_invariants(const Simulation& simulation) {
     double kinetic_energy   = simulation.get_total_kinetic_energy();
     double potential_energy = simulation.get_total_potential_energy();
-    Vec2<double> momentum = simulation.get_total_momentum();
-    std::cout << "Energy: " << (kinetic_energy + potential_energy) << "J (kinetic: " << kinetic_energy << "J, potential" << potential_energy << "J)                   \n";
+    Vec2 momentum = simulation.get_total_momentum();
+    std::cout << "Energy(without springs): " << (kinetic_energy + potential_energy) << "J (kinetic: " << kinetic_energy << "J, potential" << potential_energy << "J)                   \n";
     std::cout << "Momentum: " << momentum << "kg . m / s                \n";
 
 }
@@ -34,6 +34,7 @@ int main() {
     using clock = std::chrono::steady_clock;
     Renderer renderer;
     Simulation sim = create_simulation();
+    renderer.add_spring(0, 1);
 
     int frame_counter = 0;
     auto last = clock::now();
@@ -59,21 +60,24 @@ int main() {
 
 Simulation create_simulation() {
     std::vector<Particle> particles;
-    for (int i = 0; i < 100; i++) {
-        Particle particle;
-        particle.position = {(_random() - 0.5) * 7, _random() * 0.1 - 0.9};
-        //particle.velocity = {_random() * 0.02 - 0.01, _random() * 0.02 - 0.01};
-        particles.push_back(std::move(particle));
-    }
-    for (int i = 0; i < 5; i++) {
-        Particle particle;
-        particle.position = {(_random() - 0.5) * 9, (_random() - 0.5) + 0.4};
-        particle.fixed = true;
-        particle.symbol = 'O';
-        particle.radius = 0.3;
-        particles.push_back(particle);
-    }
+    Particle fixed_particle;
+    fixed_particle.position = Vec2<double>(0, -0.8);
+    fixed_particle.fixed = true;
+    fixed_particle.radius = 0.2;
+    fixed_particle.mass = 10;
+    fixed_particle.symbol = 'O';
+    particles.push_back(fixed_particle);
+    Particle moving_particle;
+    moving_particle.position = Vec2<double>(-0.5, 0.5);
+    moving_particle.radius = 0.1;
+    moving_particle.symbol = 'O';
+    particles.push_back(moving_particle);
+
     SimulationConfig simulation_config;
-    return Simulation(std::move(simulation_config), std::move(particles));
+    simulation_config.drag = false;
+    simulation_config.wind = false;
+    Simulation sim(std::move(simulation_config), std::move(particles));
+    sim.add_spring(0, 1, (fixed_particle.position - moving_particle.position).norm() / 2, 50, 0);
+    return sim;
 }
 

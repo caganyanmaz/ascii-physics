@@ -3,9 +3,9 @@
 #include <ostream>
 
 struct Particle {
-    Vec2 position;
-    Vec2 velocity;
-    Vec2 force_accumulator;
+    Vec2<double> position;
+    Vec2<double> velocity;
+    Vec2<double> force_accumulator;
     double mass;
     double radius;
     char symbol;

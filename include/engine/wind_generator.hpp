@@ -3,8 +3,8 @@
 
 
 class WindGenerator : public ForceGenerator {
-    const Vec2 wind_velocity;
+    const Vec2<double> wind_velocity;
 public:
-    WindGenerator(Vec2 wind_velocity);
+    WindGenerator(Vec2<double> wind_velocity);
     void generate(std::vector<Particle>& particles)override;
 };
