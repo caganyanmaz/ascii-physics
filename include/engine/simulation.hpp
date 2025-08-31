@@ -2,6 +2,7 @@
 #include "particle.hpp"
 #include "surface.hpp"
 #include <vector>
+#include "simulation_config.hpp"
 
 template<bool gravity, bool drag, bool wind>
 class Simulation {
@@ -9,8 +10,9 @@ class Simulation {
     std::vector<Surface> surfaces;
     std::vector<std::reference_wrapper<Particle>> static_particles;
     std::vector<std::reference_wrapper<Particle>> dynamic_particles;
+    const SimulationConfig simulation_config;
 public:
-    Simulation();
+    Simulation(SimulationConfig&& simulation_config);
     void init();
     void step(double dt);
     const std::vector<Particle>& get_particles()const;

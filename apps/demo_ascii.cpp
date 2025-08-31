@@ -28,7 +28,8 @@ double _random() {
 
 int main() {
     using clock = std::chrono::steady_clock;
-    Simulation<true, true, true> sim;
+    SimulationConfig simulation_config;
+    Simulation<true, true, true> sim(std::move(simulation_config));
     Renderer renderer;
     srand(42);
     for (int i = 0; i < 100; i++) {

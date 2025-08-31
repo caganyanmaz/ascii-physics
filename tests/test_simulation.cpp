@@ -3,11 +3,14 @@
 
 #define MACHINE_EPSILON 1e-15
 TEST(SimulationTest, ParticleSimple) {
-    Simulation<false, false, false> sim;
+    SimulationConfig simulation_config;
+    Simulation<false, false, false> sim(std::move(simulation_config));
     Particle particle;
     particle.velocity = Vec2(0.5, -0.1);
     sim.add_particle(std::move(particle));
+    sim.init();
     for (int i = 0; i < 100; i++) {
+        std::cout << "Stepping...\n";
         sim.step(0.01);
     }
     ASSERT_EQ(sim.get_particles().size(), 1);

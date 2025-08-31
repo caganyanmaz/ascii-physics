@@ -10,7 +10,7 @@ const static Vec2 WIND_VELOCITY(0.1, -0.1);
 //constexpr static double PARTICLE_ELECTROMAGNETISM_COEFFICIENT = 1;
 
 template<bool gravity, bool drag, bool wind>
-Simulation<gravity, drag, wind>::Simulation() {
+Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& simulation_config) : simulation_config(std::move(simulation_config)){
     // Adding boundaries
     surfaces = {
         Surface(Vec2(0, 0.9), Vec2(0, -1)),
