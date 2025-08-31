@@ -3,7 +3,7 @@
 #include <iostream>
 
 template<bool gravity, bool drag, bool wind>
-Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config) : config(std::move(config)){
+Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) : config(std::move(config)), particles(std::move(particles)){
     if (config.gravity != gravity || config.drag != drag || config.wind != wind) {
         throw std::invalid_argument("Config input and the template doesn't match");
     }
@@ -14,11 +14,9 @@ Simulation<gravity, drag, wind>::Simulation(SimulationConfig&& config) : config(
         Surface(Vec2(4.5, 0), Vec2(-1, 0)),
         Surface(Vec2(-4.5, 0), Vec2(1, 0))
     };
-}
 
-template<bool gravity, bool drag, bool wind>
-void Simulation<gravity, drag, wind>::init() {
-    for (Particle& particle : particles) {
+    // Setting up particles 
+    for (Particle& particle : this->particles) {
         if (particle.fixed) {
             static_particles.push_back(particle);
         } else {
@@ -148,10 +146,6 @@ const std::vector<Particle>& Simulation<gravity, drag, wind>::get_particles()con
     return particles;
 }
 
-template<bool gravity, bool drag, bool wind>
-void Simulation<gravity, drag, wind>::add_particle(Particle&& particle) {
-    particles.push_back(std::move(particle));
-}
 
 template class Simulation<false, false, false>;
 template class Simulation<false, false, true >;

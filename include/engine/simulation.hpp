@@ -12,11 +12,9 @@ class Simulation {
     std::vector<std::reference_wrapper<Particle>> dynamic_particles;
     const SimulationConfig config;
 public:
-    Simulation(SimulationConfig&& config);
-    void init();
+    Simulation(SimulationConfig&& config, std::vector<Particle>&& particles);
     void step(double dt);
     const std::vector<Particle>& get_particles()const;
-    void add_particle(Particle&& particle);
     double get_total_energy()const;
     double get_total_kinetic_energy()const;
     double get_total_potential_energy()const;

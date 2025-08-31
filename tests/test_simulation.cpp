@@ -3,15 +3,15 @@
 
 #define MACHINE_EPSILON 1e-15
 TEST(SimulationTest, ParticleSimple) {
+    std::vector<Particle> particles;
+    Particle particle;
+    particle.velocity = Vec2(0.5, -0.1);
+    particles.push_back(std::move(particle));
     SimulationConfig simulation_config;
     simulation_config.gravity = false;
     simulation_config.drag = false;
     simulation_config.wind = false;
-    Simulation<false, false, false> sim(std::move(simulation_config));
-    Particle particle;
-    particle.velocity = Vec2(0.5, -0.1);
-    sim.add_particle(std::move(particle));
-    sim.init();
+    Simulation<false, false, false> sim(std::move(simulation_config), std::move(particles));
     for (int i = 0; i < 100; i++) {
         sim.step(0.01);
     }

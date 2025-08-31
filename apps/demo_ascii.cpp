@@ -26,27 +26,15 @@ double _random() {
     return ((double) rand() / (RAND_MAX));
 }
 
+Simulation<true, true, true> create_simulation();
+
+
+
 int main() {
-    using clock = std::chrono::steady_clock;
-    SimulationConfig simulation_config;
-    Simulation<true, true, true> sim(std::move(simulation_config));
-    Renderer renderer;
     srand(42);
-    for (int i = 0; i < 100; i++) {
-        Particle particle;
-        particle.position = {(_random() - 0.5) * 7, _random() * 0.1 - 0.9};
-        //particle.velocity = {_random() * 0.02 - 0.01, _random() * 0.02 - 0.01};
-        sim.add_particle(std::move(particle));
-    }
-    for (int i = 0; i < 5; i++) {
-        Particle particle;
-        particle.position = {(_random() - 0.5) * 9, (_random() - 0.5) + 0.4};
-        particle.fixed = true;
-        particle.symbol = 'O';
-        particle.radius = 0.3;
-        sim.add_particle(std::move(particle));
-    }
-    sim.init();
+    using clock = std::chrono::steady_clock;
+    Renderer renderer;
+    Simulation<true, true, true> sim = create_simulation();
 
     int frame_counter = 0;
     auto last = clock::now();
@@ -68,5 +56,25 @@ int main() {
     }
 
     return 0;
+}
+
+Simulation<true, true, true> create_simulation() {
+    std::vector<Particle> particles;
+    for (int i = 0; i < 100; i++) {
+        Particle particle;
+        particle.position = {(_random() - 0.5) * 7, _random() * 0.1 - 0.9};
+        //particle.velocity = {_random() * 0.02 - 0.01, _random() * 0.02 - 0.01};
+        particles.push_back(std::move(particle));
+    }
+    for (int i = 0; i < 5; i++) {
+        Particle particle;
+        particle.position = {(_random() - 0.5) * 9, (_random() - 0.5) + 0.4};
+        particle.fixed = true;
+        particle.symbol = 'O';
+        particle.radius = 0.3;
+        particles.push_back(particle);
+    }
+    SimulationConfig simulation_config;
+    return Simulation<true, true, true>(std::move(simulation_config), std::move(particles));
 }
 
