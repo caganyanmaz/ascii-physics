@@ -1,7 +1,6 @@
 #pragma once
 #include "force_generator.hpp"
 
-
 class SpringGenerator : public ForceGenerator {
 private:
     int a_id, b_id;
