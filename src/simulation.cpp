@@ -8,7 +8,8 @@
 
 Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
     :   config(std::move(config)), 
-        particles(std::move(particles))
+        particles(std::move(particles)),
+        is_gravity_included(config.gravity)
 {
     // Adding force generators
     if (config.gravity)
@@ -128,6 +129,8 @@ double Simulation::get_total_kinetic_energy()const {
 }
 
 double Simulation::get_total_potential_energy()const {
+    if (!is_gravity_included)
+        return 0;
     double res = 0;
     for (const Particle& particle : particles) {
         res += particle.mass * (1 - particle.position.y) * config.gravitational_acceleration;

@@ -7,6 +7,7 @@
 #include <memory>
 
 class Simulation {
+    bool is_gravity_included;
     std::vector<Particle> particles;
     std::vector<Surface> surfaces;
     std::vector<std::reference_wrapper<Particle>> static_particles;
