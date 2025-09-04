@@ -1,18 +1,25 @@
 #include "engine/renderer.hpp"
+#include "engine/terminal_frame.hpp"
+#include "engine/frame.hpp"
 #include <cassert>
 #include <iostream>
 
 constexpr static char SPRING_CHAR = '.';
 
-Renderer::Renderer() {
-    for (int i = 0; i < GRID_HEIGHT; i++) {
-        for (int j = 0; j < GRID_WIDTH; j++) {
-            grid[i][j] = ' ';
-        }
-        grid[i][GRID_WIDTH] = '\0';
+Renderer::Renderer() : Renderer(GRID_WIDTH, GRID_HEIGHT, GRID_MULTIPLIER, std::move(std::unique_ptr<Frame>(new TerminalFrame()))) {}
+
+Renderer::Renderer(int grid_width, int grid_height, int grid_multiplier, std::unique_ptr<Frame> frame) 
+    : 
+        grid_width(grid_width),
+        grid_height(grid_height),
+        grid_multiplier(grid_multiplier),
+        frame(std::move(frame)), 
+        grid((grid_width + 1) * grid_height, ' ')
+{
+    for (int i = 0; i < grid_height; i++) {
+        get_cell(grid_width, i) = '\0';
     }
 }
-
 void Renderer::render(const std::vector<Particle>& particles) {
     update_grid(particles);
     render_grid();
@@ -35,30 +42,27 @@ void Renderer::update_grid(const std::vector<Particle>& particles) {
     std::vector<ActiveCell> active_cells = get_all_active_cells(particles);
     for (const ActiveCell& active_cell : active_cells) {
         if (is_in_range(active_cell.position)) {
-            grid[active_cell.position.y][active_cell.position.x] = active_cell.draw_symbol;
+            get_cell(active_cell.position.x,active_cell.position.y) = active_cell.draw_symbol;
         }
     }
 }
 
-void Renderer::render_grid() const{
-    std::cout << "\x1b[H";
-    for (int i = 0; i < GRID_HEIGHT; i++) {
-        std::cout << grid[i] << "\n";
-    }
+void Renderer::render_grid() {
+    frame->draw_grid(grid.data(), grid_height, grid_width);
 }
 
 void Renderer::clear_grid(const std::vector<Particle>& particles) {
     std::vector<ActiveCell> active_cells = get_all_active_cells(particles);
     for (const ActiveCell& active_cell : active_cells) {
         if (is_in_range(active_cell.position)) {
-            grid[active_cell.position.y][active_cell.position.x] = ' ';
+            get_cell(active_cell.position.x, active_cell.position.y)  = ' ';
         }
     }
 }
 
 std::vector<Renderer::ActiveCell> Renderer::get_particle_cells(const Particle& particle) const{
     auto [ center_x, center_y ] = convert_to_screen_coordinates(particle.position);
-    double scaled_r = particle.radius * GRID_MULTIPLIER;
+    double scaled_r = particle.radius * grid_multiplier;
     double scaled_r_squared = scaled_r * scaled_r;
     std::vector<ActiveCell> res;
     for (int y = center_y - scaled_r - 1; y <= center_y + scaled_r + 1; y++) {
@@ -116,11 +120,15 @@ std::vector<Renderer::ActiveCell> Renderer::get_all_active_cells(const std::vect
 }
 
 bool Renderer::is_in_range(Vec2<int> coordinate)const {
-    return 0 <= coordinate.x && coordinate.x < GRID_WIDTH && 0 <= coordinate.y && coordinate.y < GRID_HEIGHT;
+    return 0 <= coordinate.x && coordinate.x < grid_width && 0 <= coordinate.y && coordinate.y < grid_height;
 }
 
 Vec2<int> Renderer::convert_to_screen_coordinates(const Vec2<double>& position)const {
-    int x = (position.x * GRID_MULTIPLIER) + GRID_WIDTH * 0.5;
-    int y = (position.y * GRID_MULTIPLIER) + GRID_HEIGHT * 0.5;
+    int x = (position.x * grid_multiplier) + grid_width * 0.5;
+    int y = (position.y * grid_multiplier) + grid_height * 0.5;
     return Vec2<int>(x, y);
+}
+
+char& Renderer::get_cell(int x, int y) {
+    return grid[y * (grid_width + 1) + x];
 }
