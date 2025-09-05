@@ -59,14 +59,14 @@ double Simulation::get_dt_until_collision(double dt) {
     while (r - l > COLLISION_TIME_ERROR_TOLERANCE) {
         double m = (l+r) * 0.5;
         process_without_collisions(m);
-        if (is_there_a_collision()) {
+        if (is_there_an_inter_penetration()) {
             r = m;
         } else {
             l = m;
         }
         load_state(tmp_y);
     }
-    return l;
+    return r;
 }
 
 void Simulation::process_without_collisions(double dt) {
@@ -88,88 +88,100 @@ void Simulation::process_without_collisions(double dt) {
     load_state(y);
 }
 
-void Simulation::add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length) {
-    force_generators.push_back(std::unique_ptr<ForceGenerator>(new SpringGenerator(a_id, b_id, spring_constant, damping_constant, rest_length)));
-}
 
-void Simulation::clear_forces() {
-    for (Particle& particle : particles) {
-        particle.force_accumulator = Vec2<double>(0, 0);
+void Simulation::process_all_collisions() {
+    auto [ y, dy ] = create_state_containers();
+    dump_state(y, dy);
+    process_without_collisions(COLLISION_TIME_ERROR_TOLERANCE);
+    std::vector<Particle> particles_after_unit_time = particles;
+    load_state(y);
+    clear_forces();
+    for (int i = 0; i < particles.size(); i++) {
+        if (particles[i].fixed) {
+            continue;
+        }
+        process_collisions(particles[i], particles_after_unit_time[i]);
     }
 }
 
-void Simulation::add_forces() {    
-    for (std::unique_ptr<ForceGenerator>& force_generator : force_generators) {
-        force_generator->generate(particles);
+void Simulation::process_collisions(Particle& particle, const Particle& particle_after_unit_time) {
+    for (const Particle& obstacle : static_particles) {
+        if (is_there_a_particle_particle_inter_penetration(particle_after_unit_time, obstacle)) {
+            std::cout << "hi\n";
+            process_particle_particle_collision(particle, obstacle);
+        }
     }
+    for (const Surface& surface : surfaces) {
+        if (is_there_a_particle_surface_inter_penetration(particle_after_unit_time, surface)) {
+            process_particle_surface_collision(particle, surface);
+        }
+    }
+
 }
 
-bool Simulation::is_there_a_collision()const {
+bool Simulation::is_there_an_inter_penetration()const {
+    for (const Particle& particle : dynamic_particles) {
+        if (is_there_an_inter_penetration(particle)) {
+            return true;
+        }
+    }
     return false;
 }
 
-void Simulation::process_all_collisions() {
-    return;
-    /*
-    for (Particle& particle : dynamic_particles) {
-        Vec2<double> new_position = particle.position + (dt * particle.velocity);
-        auto [collided, total_impact] = process_collisions(particle, new_position, dt);
-        const Vec2<double> total_force  = collided ? total_impact : particle.force_accumulator;
-        const Vec2<double> acceleration = total_force / particle.mass;
-        particle.position = new_position;
-        particle.velocity += dt * acceleration;
+bool Simulation::is_there_an_inter_penetration(const Particle& particle)const {
+    for (const Particle& obstacle: static_particles) {
+        if (is_there_a_particle_particle_inter_penetration(particle, obstacle)) {
+            return true;
+        }
     }
-    */
+    for (const Surface& surface: surfaces) {
+        if (is_there_a_particle_surface_inter_penetration(particle, surface)) {
+            return true;
+        }
+    }
+    return false;
 }
 
-std::pair<bool, Vec2<double>> Simulation::process_collisions(const Particle& particle, Vec2<double>& new_position, double dt)const {
-    bool collided = false;
-    Vec2<double> total_impact(0, 0);
-    for (const Surface& surface : surfaces) {
-        auto [ collided_with_surface, surface_impact ] = process_particle_surface_collision(particle, new_position, dt, surface);
-        collided = collided || collided_with_surface;
-        total_impact += surface_impact;
-    }
-    for (const Particle& obstacle : static_particles) {
-        auto [ collided_with_obstacle, obstacle_impact ] = process_particle_particle_collision(particle, new_position, dt, obstacle);
-        collided = collided || collided_with_obstacle;
-        total_impact += obstacle_impact;
-    }
-    return std::make_pair(collided, total_impact);
+bool Simulation::is_there_a_particle_surface_inter_penetration(const Particle& particle, const Surface& surface)const {
+    double distance = (particle.position - surface.position) * surface.normal;
+    return distance < particle.radius && surface.normal * particle.velocity > 0;
 }
 
-std::pair<bool, Vec2<double>> Simulation::process_particle_surface_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Surface& surface)const {
-    double dist = (new_position - surface.position) * surface.normal;
-    if (dist > particle.radius) {
-        return std::make_pair(false, Vec2<double>(0, 0));
-    }
-    if (surface.normal * particle.velocity >= 0) {
-        new_position += (particle.radius - dist) * surface.normal;
-        return std::make_pair(false, Vec2<double>(0, 0));
-    }
-    const double impact_coefficient = -(particle.velocity * surface.normal) * (config.particle_surface_restitution + 1) * particle.mass;
-    const double velocity_change = (particle.radius - dist) / (particle.velocity * surface.normal);
-    new_position += velocity_change * particle.velocity;
-    return std::make_pair(true, impact_coefficient * surface.normal / dt);
+bool Simulation::is_there_a_particle_particle_inter_penetration(const Particle& a, const Particle& b)const {
+    Vec2<double> position_difference     = a.position - b.position;
+    double distance                      = position_difference.norm();
+    double min_distance                  = (a.radius + b.radius);
+    Vec2<double> relative_velocity       = a.velocity - b.velocity;
+    Vec2<double> current_difference_norm = position_difference.normalize();
+    return (distance < min_distance) && (current_difference_norm * relative_velocity < 0);
 }
 
-std::pair<bool, Vec2<double>> Simulation::process_particle_particle_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Particle& other_particle)const {
-    const double min_distance     = particle.radius + other_particle.radius;
-    const Vec2<double> current_difference = particle.position - other_particle.position;
+void Simulation::process_particle_surface_collision(Particle& particle, const Surface& surface) {
+    assert(surface.normal * particle.velocity < 1e9);
+    // If this is the case just before the collision, that means the particle is in a resting collision 
+    // (instead of bouncing, it's standing on top of somewhere). So I just set the velocity towards that to zero if that's the case
+    // Note that the way I implemented stuff, this'll be terribly inefficient as we'll detect this collision at every unit time
+    // So I need to fix this as a first thing after making colliding collisions work :)
+    if(surface.normal * particle.velocity >= 0) {
+        particle.velocity += -(particle.velocity * surface.normal) * surface.normal;
+        return;
+    }
+    const double impact_coefficient = -(particle.velocity * surface.normal) * (config.particle_surface_restitution + 1);
+    particle.velocity += impact_coefficient * surface.normal;
+}
+
+void Simulation::process_particle_particle_collision(Particle& a, const Particle& b) {
+    const Vec2<double> current_difference = a.position - b.position;
     const double current_distance = current_difference.norm();
-    const Vec2<double> relative_velocity  = particle.velocity - other_particle.velocity;
+    const Vec2<double> relative_velocity  = a.velocity - b.velocity;
     const Vec2<double> normal             = current_difference.normalize();
-    if (current_distance > min_distance) {
-        return std::make_pair(false, Vec2<double>(0, 0));
+    assert(normal * relative_velocity < 1e9);
+    // Same problem as above, I thing this branch will be rarer tho
+    if (normal * relative_velocity >= 0) {
+        a.velocity += -(a.velocity * normal) * normal;
     }
-    if ((normal * relative_velocity) >= 0) {
-        new_position += (min_distance - current_distance) * normal;
-        return std::make_pair(false, Vec2<double>(0, 0));
-    }
-    const double impact_coefficient = -(relative_velocity * normal) * (config.particle_particle_restitution + 1) * particle.mass;
-    const double rollback_needed    = (min_distance - current_distance) / (-(normal * relative_velocity));
-    new_position += rollback_needed * particle.velocity;  // TODO: Fix this so it works for moving particles as well
-    return std::make_pair(true, impact_coefficient * normal / dt);
+    const double impact_coefficient = -(relative_velocity * normal) * (config.particle_particle_restitution + 1);
+    a.velocity += impact_coefficient * normal;
 }
 
 constexpr static int PARTICLE_VECTOR_SIZE = 4;
@@ -246,4 +258,21 @@ const std::vector<Particle>& Simulation::get_particles()const {
     return particles;
 }
 
+void Simulation::add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length) {
+    force_generators.push_back(std::unique_ptr<ForceGenerator>(new SpringGenerator(a_id, b_id, spring_constant, damping_constant, rest_length)));
+}
 
+void Simulation::clear_forces() {
+    for (Particle& particle : particles) {
+        particle.force_accumulator = Vec2<double>(0, 0);
+    }
+}
+
+void Simulation::add_forces() {    
+    // Regular force generators
+    for (std::unique_ptr<ForceGenerator>& force_generator : force_generators) {
+        force_generator->generate(particles);
+    }
+
+
+}

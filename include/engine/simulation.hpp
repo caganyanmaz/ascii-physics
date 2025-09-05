@@ -25,17 +25,20 @@ public:
     double get_total_potential_energy()const;
     Vec2<double> get_total_momentum()const;
 private:  
-    std::pair<bool, Vec2<double>> process_collisions(const Particle& particle, Vec2<double>& new_position, double dt)const;
-    std::pair<bool, Vec2<double>> process_particle_particle_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Particle& other_particle)const;
-    std::pair<bool, Vec2<double>> process_particle_surface_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Surface& surface)const;
     void clear_forces();
     void add_forces(); 
     std::pair<std::vector<double>, std::vector<double>> create_state_containers()const;
     void dump_state(std::vector<double>& y, std::vector<double>& dy)const;
     void load_state(const std::vector<double>& y);
     void process_without_collisions(double dt);
-    bool is_there_a_collision()const;
+    bool is_there_an_inter_penetration()const;
+    bool is_there_an_inter_penetration(const Particle& particle)const;
+    bool is_there_a_particle_particle_inter_penetration(const Particle& a, const Particle& b)const;
+    bool is_there_a_particle_surface_inter_penetration(const Particle& a, const Surface& surface)const;
     void process_all_collisions();
+    void process_collisions(Particle& particle, const Particle& particle_after_unit_time);
+    void process_particle_particle_collision(Particle& particle, const Particle& other_particle);
+    void process_particle_surface_collision(Particle& particle, const Surface& surface);
     int get_state_vector_size()const;
     double get_dt_until_collision(double dt);
 };
