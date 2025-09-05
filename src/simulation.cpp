@@ -3,8 +3,11 @@
 #include "engine/spring_generator.hpp"
 #include "engine/gravity_generator.hpp"
 #include "engine/simulation_config.hpp"
+#include <cassert>
 #include <cmath>
 #include <iostream>
+
+constexpr static double COLLISION_TIME_ERROR_TOLERANCE = 1e-9;
 
 Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
     :   config(std::move(config)), 
@@ -38,16 +41,48 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
 }
 
 void Simulation::step(double dt) {
+    while (dt > COLLISION_TIME_ERROR_TOLERANCE) {
+        double cur = get_dt_until_collision(dt);
+        process_without_collisions(cur);
+        process_all_collisions();
+        dt -= cur;
+    }
+}
+
+double Simulation::get_dt_until_collision(double dt) {
+    auto [ tmp_y, tmp_dy ] = create_state_containers();
+    dump_state(tmp_y, tmp_dy);
+    double l = 0, r = dt;
+    while (r - l > COLLISION_TIME_ERROR_TOLERANCE) {
+        double m = (l+r) * 0.5;
+        process_without_collisions(m);
+        if (is_there_a_collision()) {
+            r = m;
+        } else {
+            l = m;
+        }
+        load_state(tmp_y);
+    }
+    return l;
+}
+
+void Simulation::process_without_collisions(double dt) {
+    auto [ y, dy ] = create_state_containers();
+    std::unique_ptr<OdeSolver> ode_solver = config.ode_solver_factory->make(y, dy, dt);
+
     clear_forces();
     add_forces();
-    for (Particle& particle : dynamic_particles) {
-        Vec2<double> new_position = particle.position + (dt * particle.velocity);
-        auto [collided, total_impact] = process_collisions(particle, new_position, dt);
-        const Vec2<double> total_force  = collided ? total_impact : particle.force_accumulator;
-        const Vec2<double> acceleration = total_force / particle.mass;
-        particle.position = new_position;
-        particle.velocity += dt * acceleration;
+    dump_state(y, dy);
+
+    while (!ode_solver->is_over()) {
+        ode_solver->step();
+        load_state(y);
+        clear_forces();
+        add_forces();
+        dump_state(y, dy);
     }
+    ode_solver->end();
+    load_state(y);
 }
 
 void Simulation::add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length) {
@@ -64,6 +99,24 @@ void Simulation::add_forces() {
     for (std::unique_ptr<ForceGenerator>& force_generator : force_generators) {
         force_generator->generate(particles);
     }
+}
+
+bool Simulation::is_there_a_collision()const {
+    return false;
+}
+
+void Simulation::process_all_collisions() {
+    return;
+    /*
+    for (Particle& particle : dynamic_particles) {
+        Vec2<double> new_position = particle.position + (dt * particle.velocity);
+        auto [collided, total_impact] = process_collisions(particle, new_position, dt);
+        const Vec2<double> total_force  = collided ? total_impact : particle.force_accumulator;
+        const Vec2<double> acceleration = total_force / particle.mass;
+        particle.position = new_position;
+        particle.velocity += dt * acceleration;
+    }
+    */
 }
 
 std::pair<bool, Vec2<double>> Simulation::process_collisions(const Particle& particle, Vec2<double>& new_position, double dt)const {
@@ -116,6 +169,44 @@ std::pair<bool, Vec2<double>> Simulation::process_particle_particle_collision(co
     return std::make_pair(true, impact_coefficient * normal / dt);
 }
 
+constexpr static int PARTICLE_VECTOR_SIZE = 4;
+    
+std::pair<std::vector<double>, std::vector<double>> Simulation::create_state_containers()const {
+    const int n = get_state_vector_size();
+    return {std::vector<double>(n), std::vector<double>(n)};
+}
+
+void Simulation::dump_state(std::vector<double>& y, std::vector<double>& dy)const {
+    const int n = get_state_vector_size();
+    assert(y.size() == n && dy.size() == n);
+    for (int i = 0; i < particles.size(); i++) {
+        y[i*PARTICLE_VECTOR_SIZE]    = particles[i].position.x;
+        y[i*PARTICLE_VECTOR_SIZE+1]  = particles[i].position.y;
+        y[i*PARTICLE_VECTOR_SIZE+2]  = particles[i].velocity.x;
+        y[i*PARTICLE_VECTOR_SIZE+3]  = particles[i].velocity.y;
+        dy[i*PARTICLE_VECTOR_SIZE]   = particles[i].velocity.x;
+        dy[i*PARTICLE_VECTOR_SIZE+1] = particles[i].velocity.y;
+        dy[i*PARTICLE_VECTOR_SIZE+2] = particles[i].force_accumulator.x / particles[i].mass;
+        dy[i*PARTICLE_VECTOR_SIZE+3] = particles[i].force_accumulator.y / particles[i].mass;
+    }
+}
+
+void Simulation::load_state(const std::vector<double>& y) {
+    const int n = particles.size() * PARTICLE_VECTOR_SIZE;
+    assert(y.size() == n);
+    for (int i = 0; i < particles.size(); i++) {
+        particles[i].position.x = y[i*PARTICLE_VECTOR_SIZE];
+        particles[i].position.y = y[i*PARTICLE_VECTOR_SIZE+1];
+        particles[i].velocity.x = y[i*PARTICLE_VECTOR_SIZE+2];
+        particles[i].velocity.y = y[i*PARTICLE_VECTOR_SIZE+3];
+    }
+}
+
+int Simulation::get_state_vector_size()const {
+    return PARTICLE_VECTOR_SIZE * particles.size();
+}
+
+
 double Simulation::get_total_energy()const {
     return get_total_kinetic_energy() + get_total_potential_energy();
 }
@@ -149,4 +240,5 @@ Vec2<double> Simulation::get_total_momentum()const {
 const std::vector<Particle>& Simulation::get_particles()const {
     return particles;
 }
+
 

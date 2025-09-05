@@ -3,6 +3,7 @@
 #include "surface.hpp"
 #include "drag_generator.hpp"
 #include "simulation_config.hpp"
+#include "ode_solver.hpp"
 #include <vector>
 #include <memory>
 
@@ -28,6 +29,14 @@ private:
     std::pair<bool, Vec2<double>> process_particle_particle_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Particle& other_particle)const;
     std::pair<bool, Vec2<double>> process_particle_surface_collision(const Particle& particle, Vec2<double>& new_position, double dt, const Surface& surface)const;
     void clear_forces();
-    void add_forces();
+    void add_forces(); 
+    std::pair<std::vector<double>, std::vector<double>> create_state_containers()const;
+    void dump_state(std::vector<double>& y, std::vector<double>& dy)const;
+    void load_state(const std::vector<double>& y);
+    void process_without_collisions(double dt);
+    bool is_there_a_collision()const;
+    void process_all_collisions();
+    int get_state_vector_size()const;
+    double get_dt_until_collision(double dt);
 };
 
