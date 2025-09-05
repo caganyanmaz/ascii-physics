@@ -47,6 +47,9 @@ void Simulation::step(double dt) {
         process_all_collisions();
         dt -= cur;
     }
+    assert(COLLISION_TIME_ERROR_TOLERANCE >= dt && dt >= 0);
+    process_without_collisions(dt);
+    process_all_collisions();
 }
 
 double Simulation::get_dt_until_collision(double dt) {
@@ -179,31 +182,33 @@ std::pair<std::vector<double>, std::vector<double>> Simulation::create_state_con
 void Simulation::dump_state(std::vector<double>& y, std::vector<double>& dy)const {
     const int n = get_state_vector_size();
     assert(y.size() == n && dy.size() == n);
-    for (int i = 0; i < particles.size(); i++) {
-        y[i*PARTICLE_VECTOR_SIZE]    = particles[i].position.x;
-        y[i*PARTICLE_VECTOR_SIZE+1]  = particles[i].position.y;
-        y[i*PARTICLE_VECTOR_SIZE+2]  = particles[i].velocity.x;
-        y[i*PARTICLE_VECTOR_SIZE+3]  = particles[i].velocity.y;
-        dy[i*PARTICLE_VECTOR_SIZE]   = particles[i].velocity.x;
-        dy[i*PARTICLE_VECTOR_SIZE+1] = particles[i].velocity.y;
-        dy[i*PARTICLE_VECTOR_SIZE+2] = particles[i].force_accumulator.x / particles[i].mass;
-        dy[i*PARTICLE_VECTOR_SIZE+3] = particles[i].force_accumulator.y / particles[i].mass;
+    for (int i = 0; i < dynamic_particles.size(); i++) {
+        const Particle& particle = dynamic_particles[i];
+        y[i*PARTICLE_VECTOR_SIZE]    = particle.position.x;
+        y[i*PARTICLE_VECTOR_SIZE+1]  = particle.position.y;
+        y[i*PARTICLE_VECTOR_SIZE+2]  = particle.velocity.x;
+        y[i*PARTICLE_VECTOR_SIZE+3]  = particle.velocity.y;
+        dy[i*PARTICLE_VECTOR_SIZE]   = particle.velocity.x;
+        dy[i*PARTICLE_VECTOR_SIZE+1] = particle.velocity.y;
+        dy[i*PARTICLE_VECTOR_SIZE+2] = particle.force_accumulator.x / particles[i].mass;
+        dy[i*PARTICLE_VECTOR_SIZE+3] = particle.force_accumulator.y / particles[i].mass;
     }
 }
 
 void Simulation::load_state(const std::vector<double>& y) {
-    const int n = particles.size() * PARTICLE_VECTOR_SIZE;
+    const int n = dynamic_particles.size() * PARTICLE_VECTOR_SIZE;
     assert(y.size() == n);
-    for (int i = 0; i < particles.size(); i++) {
-        particles[i].position.x = y[i*PARTICLE_VECTOR_SIZE];
-        particles[i].position.y = y[i*PARTICLE_VECTOR_SIZE+1];
-        particles[i].velocity.x = y[i*PARTICLE_VECTOR_SIZE+2];
-        particles[i].velocity.y = y[i*PARTICLE_VECTOR_SIZE+3];
+    for (int i = 0; i < dynamic_particles.size(); i++) {
+        Particle& particle = dynamic_particles[i];
+        particle.position.x = y[i*PARTICLE_VECTOR_SIZE];
+        particle.position.y = y[i*PARTICLE_VECTOR_SIZE+1];
+        particle.velocity.x = y[i*PARTICLE_VECTOR_SIZE+2];
+        particle.velocity.y = y[i*PARTICLE_VECTOR_SIZE+3];
     }
 }
 
 int Simulation::get_state_vector_size()const {
-    return PARTICLE_VECTOR_SIZE * particles.size();
+    return PARTICLE_VECTOR_SIZE * dynamic_particles.size();
 }
 
 
