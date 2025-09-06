@@ -41,5 +41,7 @@ private:
     void process_particle_surface_collision(Particle& particle, const Surface& surface);
     int get_state_vector_size()const;
     double get_dt_until_collision(double dt);
+    void set_resting_surfaces();
+    void flush_normals();
 };
 

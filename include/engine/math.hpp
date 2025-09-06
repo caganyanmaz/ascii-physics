@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <cassert>
 #include <ostream>
 
 template<typename T>
@@ -13,6 +14,14 @@ struct Vec2 {
     inline Vec2 normalize()const {
         T _norm = norm();
         return Vec2(x / _norm, y / _norm);
+    }
+    double angle()const {
+        assert(norm() > 1e-9);
+        double res = std::atan2(y, x);
+        if (res < 0) {
+            return res + 2 * M_PI;
+        }
+        return res;
     }
 };
 

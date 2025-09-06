@@ -11,6 +11,6 @@ Building (Updating the regression tests)
 
 Building (without updating regression tests)
 
-> cmake -S . -B build          
+> cmake -S . -B build -DUPDATE_GOLDEN=OFF
 > cmake --build build -j
 > ctest --test-dir build --output-on-failure 

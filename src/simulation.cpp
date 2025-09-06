@@ -3,6 +3,7 @@
 #include "engine/spring_generator.hpp"
 #include "engine/gravity_generator.hpp"
 #include "engine/simulation_config.hpp"
+#include "engine/normal_force_generator.hpp"
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -21,6 +22,7 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
         force_generators.push_back(std::unique_ptr<ForceGenerator>(new DragGenerator(config.drag_coefficient)));
     if (config.wind)
         force_generators.push_back(std::unique_ptr<ForceGenerator>(new WindGenerator(config.wind_velocity)));
+    force_generators.push_back(std::make_unique<NormalForceGenerator>());
 
     // Adding boundaries
     surfaces = {
@@ -41,6 +43,9 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
 }
 
 void Simulation::step(double dt) {
+    if (dt < COLLISION_TIME_ERROR_TOLERANCE) {
+        return;
+    }
     while (dt > COLLISION_TIME_ERROR_TOLERANCE) {
         double cur = get_dt_until_collision(dt);
         process_without_collisions(cur);
@@ -50,6 +55,7 @@ void Simulation::step(double dt) {
     assert(COLLISION_TIME_ERROR_TOLERANCE >= dt && dt >= 0);
     process_without_collisions(dt);
     process_all_collisions();
+    flush_normals();
 }
 
 double Simulation::get_dt_until_collision(double dt) {
@@ -88,7 +94,6 @@ void Simulation::process_without_collisions(double dt) {
     load_state(y);
 }
 
-
 void Simulation::process_all_collisions() {
     auto [ y, dy ] = create_state_containers();
     dump_state(y, dy);
@@ -107,7 +112,6 @@ void Simulation::process_all_collisions() {
 void Simulation::process_collisions(Particle& particle, const Particle& particle_after_unit_time) {
     for (const Particle& obstacle : static_particles) {
         if (is_there_a_particle_particle_inter_penetration(particle_after_unit_time, obstacle)) {
-            std::cout << "hi\n";
             process_particle_particle_collision(particle, obstacle);
         }
     }
@@ -120,7 +124,10 @@ void Simulation::process_collisions(Particle& particle, const Particle& particle
 }
 
 bool Simulation::is_there_an_inter_penetration()const {
-    for (const Particle& particle : dynamic_particles) {
+    for (int i = 0; i < particles.size(); i++) {
+        const Particle& particle = particles[i];
+        if (particle.fixed)
+            continue;
         if (is_there_an_inter_penetration(particle)) {
             return true;
         }
@@ -144,7 +151,8 @@ bool Simulation::is_there_an_inter_penetration(const Particle& particle)const {
 
 bool Simulation::is_there_a_particle_surface_inter_penetration(const Particle& particle, const Surface& surface)const {
     double distance = (particle.position - surface.position) * surface.normal;
-    return distance < particle.radius && surface.normal * particle.velocity > 0;
+    double relative_speed = - (particle.velocity * surface.normal);
+    return distance < particle.radius && relative_speed > 0;
 }
 
 bool Simulation::is_there_a_particle_particle_inter_penetration(const Particle& a, const Particle& b)const {
@@ -158,11 +166,10 @@ bool Simulation::is_there_a_particle_particle_inter_penetration(const Particle& 
 
 void Simulation::process_particle_surface_collision(Particle& particle, const Surface& surface) {
     assert(surface.normal * particle.velocity < 1e9);
-    // If this is the case just before the collision, that means the particle is in a resting collision 
-    // (instead of bouncing, it's standing on top of somewhere). So I just set the velocity towards that to zero if that's the case
-    // Note that the way I implemented stuff, this'll be terribly inefficient as we'll detect this collision at every unit time
-    // So I need to fix this as a first thing after making colliding collisions work :)
+    // Resting collision, this should only happen once per step (per particle surface collision)
+    // Assumes surfaces are fixed
     if(surface.normal * particle.velocity >= 0) {
+        particle.add_normal(surface.normal);
         particle.velocity += -(particle.velocity * surface.normal) * surface.normal;
         return;
     }
@@ -176,12 +183,23 @@ void Simulation::process_particle_particle_collision(Particle& a, const Particle
     const Vec2<double> relative_velocity  = a.velocity - b.velocity;
     const Vec2<double> normal             = current_difference.normalize();
     assert(normal * relative_velocity < 1e9);
-    // Same problem as above, I thing this branch will be rarer tho
+    // If it's a resting collision, it'll be detected only once per cycle, then we'll add the normal of particle b to normal forces influencing a 
+    // so that a won't collide with the b again and again, causing the process to slow down
+    // NOTE: This assumes a moving particle only collides with a fixed object, and the particle won't affect the momentum of the other particle.
+    // Fix this logic when adding other types of collisions
     if (normal * relative_velocity >= 0) {
+        a.add_normal(normal);
         a.velocity += -(a.velocity * normal) * normal;
+        return;
     }
     const double impact_coefficient = -(relative_velocity * normal) * (config.particle_particle_restitution + 1);
     a.velocity += impact_coefficient * normal;
+}
+
+void Simulation::flush_normals() {
+    for (Particle& particle : particles) {
+        particle.flush_normals();
+    }
 }
 
 constexpr static int PARTICLE_VECTOR_SIZE = 4;
@@ -269,10 +287,7 @@ void Simulation::clear_forces() {
 }
 
 void Simulation::add_forces() {    
-    // Regular force generators
     for (std::unique_ptr<ForceGenerator>& force_generator : force_generators) {
         force_generator->generate(particles);
     }
-
-
 }
