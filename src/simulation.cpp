@@ -62,13 +62,21 @@ double Simulation::get_dt_until_collision(double dt) {
     auto [ tmp_y, tmp_dy ] = create_state_containers();
     dump_state(tmp_y, tmp_dy);
     double l = 0, r = dt;
+    std::vector<int> candidates;
+    for (int i = 0; i < particles.size(); i++) {
+        if (particles[i].fixed)
+            candidates.push_back(i);    
+    }
     while (r - l > COLLISION_TIME_ERROR_TOLERANCE) {
         double m = (l+r) * 0.5;
         process_without_collisions(m);
-        if (is_there_an_inter_penetration()) {
-            r = m;
-        } else {
+        std::vector<int> new_candidates = is_there_an_inter_penetration(candidates);
+        assert(new_candidates.size() <= candidates.size()); // We should get fewer candidates at each run
+        if (new_candidates.empty()) {
             l = m;
+        } else {
+            r = m;
+            std::swap(candidates, new_candidates);
         }
         load_state(tmp_y);
     }
@@ -123,16 +131,17 @@ void Simulation::process_collisions(Particle& particle, const Particle& particle
 
 }
 
-bool Simulation::is_there_an_inter_penetration()const {
-    for (int i = 0; i < particles.size(); i++) {
+std::vector<int> Simulation::is_there_an_inter_penetration(const std::vector<int>& current_candidates)const {
+    std::vector<int> inter_penetrations;
+    for (int i : current_candidates) {
         const Particle& particle = particles[i];
         if (particle.fixed)
             continue;
         if (is_there_an_inter_penetration(particle)) {
-            return true;
+            inter_penetrations.push_back(i);
         }
     }
-    return false;
+    return inter_penetrations;
 }
 
 bool Simulation::is_there_an_inter_penetration(const Particle& particle)const {

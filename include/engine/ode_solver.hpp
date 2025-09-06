@@ -8,6 +8,7 @@
 
 class OdeSolver {
 public:
+    virtual ~OdeSolver() = default;
     virtual void step() = 0;
     virtual bool is_over()const = 0;
     virtual void end() = 0;
