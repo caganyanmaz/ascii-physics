@@ -4,6 +4,7 @@
 EulerOdeSolver::EulerOdeSolver(std::vector<double>& y, std::vector<double>& dy, double dt) : y(y), dy(dy), dt(dt) {}
 
 void EulerOdeSolver::step() {
+    assert(false); // Shouldn't happen as we don't enter the loop
 }
 
 bool EulerOdeSolver::is_over()const {
