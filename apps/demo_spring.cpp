@@ -33,7 +33,25 @@ int main() {
     srand(42);
     using clock = std::chrono::steady_clock;
     Renderer renderer;
-    Simulation sim = create_simulation();
+    std::vector<Particle> particles;
+    Particle fixed_particle;
+    fixed_particle.position = Vec2<double>(0, -0.8);
+    fixed_particle.fixed = true;
+    fixed_particle.radius = 0.2;
+    fixed_particle.mass = 10;
+    fixed_particle.symbol = 'O';
+    particles.push_back(fixed_particle);
+    Particle moving_particle;
+    moving_particle.position = Vec2<double>(-0.5, 0.5);
+    moving_particle.radius = 0.1;
+    moving_particle.symbol = 'O';
+    particles.push_back(moving_particle);
+
+    SimulationConfig simulation_config;
+    simulation_config.drag = false;
+    simulation_config.wind = false;
+    Simulation sim(std::move(simulation_config), std::move(particles));
+    sim.add_spring(0, 1, (fixed_particle.position - moving_particle.position).norm() / 2, 50, 0);
     renderer.add_spring(0, 1);
 
     int frame_counter = 0;
@@ -58,26 +76,8 @@ int main() {
     return 0;
 }
 
+/*
 Simulation create_simulation() {
-    std::vector<Particle> particles;
-    Particle fixed_particle;
-    fixed_particle.position = Vec2<double>(0, -0.8);
-    fixed_particle.fixed = true;
-    fixed_particle.radius = 0.2;
-    fixed_particle.mass = 10;
-    fixed_particle.symbol = 'O';
-    particles.push_back(fixed_particle);
-    Particle moving_particle;
-    moving_particle.position = Vec2<double>(-0.5, 0.5);
-    moving_particle.radius = 0.1;
-    moving_particle.symbol = 'O';
-    particles.push_back(moving_particle);
 
-    SimulationConfig simulation_config;
-    simulation_config.drag = false;
-    simulation_config.wind = false;
-    Simulation sim(std::move(simulation_config), std::move(particles));
-    sim.add_spring(0, 1, (fixed_particle.position - moving_particle.position).norm() / 2, 50, 0);
-    return sim;
 }
-
+*/

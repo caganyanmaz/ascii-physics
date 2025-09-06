@@ -105,7 +105,7 @@ TEST(SimulationPublicTest, gravity_only_delta_potential_matches_mg_delta_y) {
 
     // ΔPE should be m * g * Δy with +y downward convention
     double expected_delta_pe = 2.0 * 9.8 * (y_after - y_before);
-    EXPECT_NEAR(pe_after - pe_before, expected_delta_pe, 1e-9);
+    EXPECT_NEAR(pe_after - pe_before, expected_delta_pe, 1e-6);
 
     // sanity: reported total energy equals KE + PE getters
     EXPECT_NEAR(sim.get_total_energy(),

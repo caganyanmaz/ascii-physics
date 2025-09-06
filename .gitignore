@@ -2,3 +2,7 @@ run-notes.txt
 .qodo/
 build/
 misc/
+build-release/
+build-prof/
+build-debug/
+benchmarks/
