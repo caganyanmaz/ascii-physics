@@ -73,6 +73,7 @@ Simulation create_simulation() {
         particles.push_back(particle);
     }
     SimulationConfig simulation_config;
+    simulation_config.boundaries = true;
     return Simulation(std::move(simulation_config), std::move(particles));
 }
 

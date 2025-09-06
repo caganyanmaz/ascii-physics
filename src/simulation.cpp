@@ -1,4 +1,5 @@
 #include "engine/simulation.hpp"
+#include "engine/ode_solver.hpp"
 #include "engine/wind_generator.hpp"
 #include "engine/spring_generator.hpp"
 #include "engine/gravity_generator.hpp"
@@ -25,12 +26,14 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
     force_generators.push_back(std::make_unique<NormalForceGenerator>());
 
     // Adding boundaries
-    surfaces = {
-        Surface(Vec2<double>(0, 0.9), Vec2<double>(0, -1)),
-        Surface(Vec2<double>(0, -0.9), Vec2<double>(0, 1)),
-        Surface(Vec2<double>(4.5, 0), Vec2<double>(-1, 0)),
-        Surface(Vec2<double>(-4.5, 0), Vec2<double>(1, 0))
-    };
+    if (config.boundaries) {
+        surfaces = {
+            Surface(Vec2<double>(0, 0.9), Vec2<double>(0, -1)),
+            Surface(Vec2<double>(0, -0.9), Vec2<double>(0, 1)),
+            Surface(Vec2<double>(4.5, 0), Vec2<double>(-1, 0)),
+            Surface(Vec2<double>(-4.5, 0), Vec2<double>(1, 0))
+        };
+    }
 
     // Setting up particles 
     for (Particle& particle : this->particles) {
@@ -41,6 +44,8 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
         }
     }
 }
+
+#include <iostream>
 
 void Simulation::step(double dt) {
     if (dt < COLLISION_TIME_ERROR_TOLERANCE) {
