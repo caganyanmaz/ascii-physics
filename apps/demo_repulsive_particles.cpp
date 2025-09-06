@@ -73,7 +73,7 @@ Simulation create_simulation() {
         particle.radius = (_random() * 0.1);
         //particle.velocity = {_random() * 0.02 - 0.01, _random() * 0.02 - 0.01};
         particles.push_back(std::move(particle));
-        particle_repulsion_effects.push_back(std::make_pair(i, 0.01));
+        particle_repulsion_effects.push_back(std::make_pair(i, 1));
     }
     SimulationConfig simulation_config;
     simulation_config.wind = false;

@@ -66,7 +66,7 @@ Simulation create_simulation() {
     for (int i = 0; i < 20; i++) {
         Particle particle;
         particle.position = {(_random() - 0.5) * 7, _random() * 0.1 - 0.9};
-        particle.velocity = {_random(), _random()};
+        particle.velocity = {_random() * 2 - 1, _random() * 2 - 1};
         particle.symbol = random_choice(symbols);
         particle.radius = (_random() * 0.3);
         //particle.velocity = {_random() * 0.02 - 0.01, _random() * 0.02 - 0.01};
