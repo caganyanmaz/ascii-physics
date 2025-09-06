@@ -105,6 +105,14 @@ add_executable(demo_spring apps/demo_spring.cpp)
 target_link_libraries(demo_spring PRIVATE engine)
 apply_no_inlining(demo_spring)
 
+add_executable(demo_floating_boxes apps/demo_floating_boxes.cpp)
+target_link_libraries(demo_floating_boxes PRIVATE engine)
+apply_no_inlining(demo_floating_boxes)
+
+add_executable(demo_repulsive_particles apps/demo_repulsive_particles.cpp)
+target_link_libraries(demo_repulsive_particles PRIVATE engine)
+apply_no_inlining(demo_repulsive_particles)
+
 # ---------------------------------
 # Profiler convenience targets (Callgrind)
 # ---------------------------------

@@ -17,6 +17,7 @@ class Simulation {
     std::vector<std::unique_ptr<ForceGenerator>> force_generators;
 public:
     Simulation(SimulationConfig&& config, std::vector<Particle>&& particles);
+    Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators);
     void step(double dt);
     const std::vector<Particle>& get_particles()const;
     void add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length);

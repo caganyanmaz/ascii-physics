@@ -12,6 +12,9 @@
 constexpr static double COLLISION_TIME_ERROR_TOLERANCE = 1e-9;
 
 Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
+    : Simulation(std::move(config), std::move(particles), std::vector<std::unique_ptr<ForceGenerator>>()) {}
+
+Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators) 
     :   config(std::move(config)), 
         particles(std::move(particles)),
         is_gravity_included(config.gravity)
@@ -23,6 +26,10 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
         force_generators.push_back(std::unique_ptr<ForceGenerator>(new DragGenerator(config.drag_coefficient)));
     if (config.wind)
         force_generators.push_back(std::unique_ptr<ForceGenerator>(new WindGenerator(config.wind_velocity)));
+    for (int i = 0; i < additional_force_generators.size(); i++) {
+        force_generators.push_back(std::move(additional_force_generators[i]));
+    }
+    additional_force_generators.clear();
     force_generators.push_back(std::make_unique<NormalForceGenerator>());
 
     // Adding boundaries
