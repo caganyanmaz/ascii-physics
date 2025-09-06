@@ -42,14 +42,24 @@ Run tests in relwithdebinfo (useful for perf regressions)
 Quick stats
 > perf stat ./build-prof/demo_ascii
 
-Hotspots with call stacks
-> perf record -g --call-graph=dwarf -- ./build-prof/demo_ascii
-> perf report
+Profiling
+Configure & build (profiler-friendly)
+> cmake --preset relwithdebinfo
+> cmake --build --preset relwithdebinfo -j
 
-(Optional) Flamegraph
-> perf script | stackcollapse-perf.pl > out.folded
-> flamegraph.pl out.folded > flame.svg
+Run under Callgrind (instrumentation off at start)
+> cmake --build --preset relwithdebinfo --target profile_demo_ascii
 
-(Optional) Deep dive
-> valgrind --tool=callgrind ./build-prof/demo_ascii
-> kcachegrind callgrind.out.*
+In another terminal, control the window you collect:
+pause (ensure it's paused if you started it mid-run)
+> callgrind_control -k
+warm up the program, then:
+> callgrind_control -i      # start collecting
+> sleep 1                   # collect ~1s
+> callgrind_control -k -d   # stop & dump
+
+Directly call valgrind
+> valgrind \
+  --tool=callgrind \
+  --callgrind-out-file=benchmarks/callgrind.out.%p \
+  ./build-prof/demo_ascii
