@@ -5,4 +5,5 @@ misc/
 build-release/
 build-prof/
 build-debug/
+build-cov/
 benchmarks/

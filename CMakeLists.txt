@@ -19,6 +19,9 @@ option(ENABLE_WARNINGS    "Enable compiler warnings"                          ON
 option(ENABLE_SANITIZERS  "Enable ASan/UBSan in Debug builds"                 ON)
 option(DISABLE_INLINING   "Disable inlining to improve Callgrind call counts" OFF)
 
+# New: Coverage
+option(ENABLE_COVERAGE    "Enable gcov/lcov coverage instrumentation"         OFF)
+
 # Helpful globally
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -42,14 +45,13 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-
 if(ENABLE_WARNINGS)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     add_compile_options(-Wall -Wextra -Wpedantic)
-    # Keep it reasonable for now; you can add -Wconversion/-Wshadow later.
   elseif (MSVC)
     add_compile_options(/W4)
   endif()
 endif()
 
-# Optional sanitizers in Debug
-if(ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+# Optional sanitizers in Debug (auto-disabled if ENABLE_COVERAGE=ON)
+if(ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_COVERAGE)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
     add_link_options(-fsanitize=address,undefined)
@@ -66,6 +68,61 @@ function(apply_no_inlining target_name)
     endif()
   endif()
 endfunction()
+
+# ---------------------------------
+# Coverage instrumentation (GCC/Clang + gcov)
+# ---------------------------------
+if(ENABLE_COVERAGE)
+  if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    message(FATAL_ERROR "ENABLE_COVERAGE currently supports GCC/Clang only.")
+  endif()
+
+  # Coverage-friendly flags
+  add_compile_options(--coverage -O0 -g)
+  add_link_options(--coverage)
+
+  # Sanitizers skew coverage; hard-disable
+  if(ENABLE_SANITIZERS)
+    message(STATUS "Disabling sanitizers because ENABLE_COVERAGE=ON")
+    set(ENABLE_SANITIZERS OFF CACHE BOOL "" FORCE)
+  endif()
+
+  # Tools
+  find_program(LCOV_EXEC lcov)
+  find_program(GENHTML_EXEC genhtml)
+
+  if(NOT LCOV_EXEC OR NOT GENHTML_EXEC)
+    message(WARNING "lcov/genhtml not found. 'coverage' targets will be unavailable.")
+  else()
+    # Where to store reports
+    set(COVERAGE_INFO         ${CMAKE_BINARY_DIR}/coverage.info)
+    set(COVERAGE_INFO_CLEANED ${CMAKE_BINARY_DIR}/coverage.cleaned.info)
+    set(COVERAGE_HTML_DIR     ${CMAKE_BINARY_DIR}/coverage-report)
+
+    # Reset counters
+    add_custom_target(coverage_reset
+      COMMAND ${LCOV_EXEC} --directory ${CMAKE_BINARY_DIR} --zerocounters
+      COMMENT "Coverage: zeroing counters in ${CMAKE_BINARY_DIR}"
+    )
+
+    # Capture raw data (does not run tests)
+    add_custom_target(coverage_capture
+      COMMAND ${LCOV_EXEC} --capture --directory ${CMAKE_BINARY_DIR} --output-file ${COVERAGE_INFO}
+      COMMENT "Coverage: capturing raw data to ${COVERAGE_INFO}"
+    )
+
+    # Generate HTML from a cleaned .info (excludes tests, deps, system headers, app demos)
+    add_custom_target(coverage_html
+      COMMAND ${LCOV_EXEC} --remove ${COVERAGE_INFO}
+              "*/tests/*" "*/_deps/*" "/usr/*" "*/googletest/*" "*/apps/*"
+              --output-file ${COVERAGE_INFO_CLEANED}
+      COMMAND ${GENHTML_EXEC} ${COVERAGE_INFO_CLEANED} --output-directory ${COVERAGE_HTML_DIR}
+      COMMENT "Coverage: generating HTML report at ${COVERAGE_HTML_DIR}/index.html"
+      DEPENDS coverage_capture
+    )
+
+  endif()
+endif()
 
 # ---------------------------------
 # Engine library (core code)
@@ -116,8 +173,6 @@ apply_no_inlining(demo_repulsive_particles)
 # ---------------------------------
 # Profiler convenience targets (Callgrind)
 # ---------------------------------
-# Use --instr-atstart=no and toggle with callgrind_control for short windows.
-# Reduce overhead: no cache/jumps; keep branch of interest readable.
 find_program(VALGRIND_EXECUTABLE valgrind)
 if(VALGRIND_EXECUTABLE)
   add_custom_target(profile_demo_ascii
@@ -152,8 +207,13 @@ endif()
 # ---------------------------------
 if(ENABLE_TESTS)
   include(FetchContent)
-  # Speeds up repeated configs offline
   set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "" FORCE)
+
+  cmake_policy(SET CMP0135 NEW)
+  set(FETCHCONTENT_QUIET OFF)
+  set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "" FORCE)
+  set(FETCHCONTENT_SOURCE_DIR_GOOGLETEST "" CACHE PATH "" FORCE)
+  set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/_deps")
 
   FetchContent_Declare(
     googletest
@@ -194,4 +254,56 @@ if(ENABLE_TESTS)
       DEPENDS tests
       COMMENT "Updating golden snapshots with UPDATE_GOLDEN=${UPDATE_GOLDEN} and regex='${GOLDEN_UPDATE_REGEX}'"
   )
+endif()
+# ---------------------------------
+# Unified "coverage" target (after tests exist)
+# ---------------------------------
+if(ENABLE_COVERAGE)
+  # Make sure lcov/genhtml are found here as well (in case of scope issues)
+  find_program(LCOV_EXEC lcov)
+  find_program(GENHTML_EXEC genhtml)
+
+  if(NOT LCOV_EXEC OR NOT GENHTML_EXEC)
+    message(WARNING "lcov/genhtml not found; 'coverage' target will print a helpful error.")
+  endif()
+
+  # Paths used by the coverage steps (reuse if already set)
+  if(NOT DEFINED COVERAGE_INFO)
+    set(COVERAGE_INFO         ${CMAKE_BINARY_DIR}/coverage.info)
+  endif()
+  if(NOT DEFINED COVERAGE_INFO_CLEANED)
+    set(COVERAGE_INFO_CLEANED ${CMAKE_BINARY_DIR}/coverage.cleaned.info)
+  endif()
+  if(NOT DEFINED COVERAGE_HTML_DIR)
+    set(COVERAGE_HTML_DIR     ${CMAKE_BINARY_DIR}/coverage-report)
+  endif()
+
+  # Define a top-level "coverage" target that runs: reset -> ctest -> capture -> clean -> genhtml
+  
+  add_custom_target(coverage
+    COMMAND ${CMAKE_COMMAND} -E echo "[Coverage] zero counters"
+    COMMAND ${LCOV_EXEC} --directory ${CMAKE_BINARY_DIR} --zerocounters
+
+    COMMAND ${CMAKE_COMMAND} -E echo "[Coverage] run tests"
+    COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
+            ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR} --output-on-failure
+
+    COMMAND ${CMAKE_COMMAND} -E echo "[Coverage] capture raw data to ${COVERAGE_INFO}"
+    COMMAND ${LCOV_EXEC} --capture --directory ${CMAKE_BINARY_DIR} --output-file ${COVERAGE_INFO}
+
+    COMMAND ${CMAKE_COMMAND} -E echo "[Coverage] filter to ${COVERAGE_INFO_CLEANED}"
+    COMMAND ${LCOV_EXEC} --remove ${COVERAGE_INFO}
+        "*/tests/*" "*/_deps/*" "/usr/*" "*/googletest/*" "*/apps/*" "*/c++/12/*"
+        --output-file ${COVERAGE_INFO_CLEANED}
+ 
+
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${COVERAGE_HTML_DIR}
+    COMMAND ${CMAKE_COMMAND} -E echo "[Coverage] generate HTML at ${COVERAGE_HTML_DIR}/index.html"
+    COMMAND ${GENHTML_EXEC} ${COVERAGE_INFO_CLEANED} --output-directory ${COVERAGE_HTML_DIR}
+
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    DEPENDS tests
+    COMMENT "Full coverage run"
+  )
+
 endif()
