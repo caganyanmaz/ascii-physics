@@ -16,13 +16,14 @@ constexpr int COLLINEAR_CONSTRAINTS = 4;
 // Totally restricted (three forces that surround the particle)
 // Note that just because there are more than two normal surfaces acting on the particle, it doesn't mean that 
 // the forces will totally constrain the object
+#include <iostream>
 void Particle::add_normal(Vec2<double> normal) {
-    assert(abs(normal.norm() - 1) < TOL);
+    assert(std::abs(normal.norm() - 1) < TOL);
     if (normal_count == TOTALLY_CONSTRAINED)
         return;
     if (normal_count < 2) {
         normals[normal_count++] = normal;
-        if (normal_count == 2 && abs(normals[0] * normal + 1) < TOL) {
+        if (normal_count == 2 && std::abs(normals[0] * normals[1] + 1) < TOL) {
             normal_count = COLLINEAR_CONSTRAINTS;
         }
         return;
@@ -54,7 +55,7 @@ void Particle::add_normal(Vec2<double> normal) {
         normals[normal_count++] = current_normals[normal_angles[i].second];
     }
     Vec2 excluded = current_normals[normal_angles[max_gap_index].second];
-    if (abs(normals[0] * normals[1] + 1) < TOL && (abs(normals[0] * excluded) < TOL || abs(normals[1] * excluded) < TOL)) {
+    if (std::abs(normals[0] * normals[1] + 1) < TOL && (std::abs(normals[0] * excluded) < TOL || std::abs(normals[1] * excluded) < TOL)) {
         normal_count = COLLINEAR_CONSTRAINTS;
     }
 }
