@@ -3,12 +3,10 @@
 
 
 
-#include <iostream> 
 RepulsiveForceGenerator::RepulsiveForceGenerator(std::vector<std::pair<size_t, double>>&& affected_particles) 
     : affected_particles(std::move(affected_particles)) {
     // Verifying data
     std::unordered_set<int> seen;
-    std::cout << affected_particles.size();
     for (auto [ idx, repulsiveness ] : affected_particles) {
         assert(seen.find(idx) == seen.end());
         assert(repulsiveness > 0);

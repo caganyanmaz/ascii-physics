@@ -2,6 +2,8 @@
 #include "engine/simulation.hpp"
 #include "engine/simulation_config.hpp"
 #include "engine/particle.hpp"
+#include "engine/ode_solver.hpp"
+#include "engine/euler_ode_solver.hpp"
 #include "golden.hpp"
 #include <iomanip>
 
@@ -34,7 +36,8 @@ static std::string snapshot(const Simulation& sim) {
 
 
 TEST(SimulationRegression, simple_free_flight) {
-    SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false;
+    SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false; 
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
 
     Particle p;
     p.position = {0.0, 0.0};
@@ -54,6 +57,7 @@ TEST(SimulationRegression, simple_free_flight) {
 // 1) two-body free flight (no forces): stable positions / velocities / totals
 TEST(SimulationRegression, free_flight_two_body) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false;
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
 
     std::vector<Particle> ps;
     ps.push_back(make_particle({0.0, 0.0}, {0.5, -0.1}, 1.0));
@@ -70,6 +74,7 @@ TEST(SimulationRegression, free_flight_two_body) {
 // 2) gravity drop (your +y downward): lock current integrator behavior
 TEST(SimulationRegression, gravity_drop_single) {
     SimulationConfig cfg; cfg.gravity=true; cfg.drag=false; cfg.wind=false;
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
     cfg.gravitational_acceleration = 9.81;
 
     std::vector<Particle> ps;
@@ -86,6 +91,7 @@ TEST(SimulationRegression, gravity_drop_single) {
 // 3) wind impulse only: momentum change driven by wind every step
 TEST(SimulationRegression, wind_impulse_line) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=true;
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
     cfg.wind_velocity = Vec2<double>(0.3, -0.15);
 
     std::vector<Particle> ps;
@@ -103,6 +109,7 @@ TEST(SimulationRegression, wind_impulse_line) {
 // 4) drag only: decay trajectory — we snapshot the whole state
 TEST(SimulationRegression, drag_decay) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=true; cfg.wind=false;
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
     cfg.drag_coefficient = -0.2;
 
     std::vector<Particle> ps;
@@ -118,6 +125,7 @@ TEST(SimulationRegression, drag_decay) {
 // 5) internal spring only (no gravity/wind/drag): oscillation snapshot
 TEST(SimulationRegression, spring_oscillation_two_body) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false;
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
 
     Particle a = make_particle({-0.5, 0.0}, { 0.0,  0.5}, 1.0);
     Particle b = make_particle({ 0.5, 0.0}, { 0.0, -0.5}, 1.5);
@@ -134,6 +142,7 @@ TEST(SimulationRegression, spring_oscillation_two_body) {
 // 6) mixed forces: gravity + drag + wind with two particles
 TEST(SimulationRegression, mixed_forces_two_body) {
     SimulationConfig cfg;
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
     cfg.gravity = true;
     cfg.drag    = true;
     cfg.wind    = true;

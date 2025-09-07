@@ -1,5 +1,6 @@
 #include "engine/ode_solver.hpp"
 #include "engine/euler_ode_solver.hpp"
+#include "engine/midpoint_ode_solver.hpp"
 
 
 template<class OdeSolverInstance>
@@ -9,3 +10,4 @@ std::unique_ptr<OdeSolver> OdeSolverFactoryInstance<OdeSolverInstance>::make(std
 
 
 template class OdeSolverFactoryInstance<EulerOdeSolver>;
+template class OdeSolverFactoryInstance<MidpointOdeSolver>;

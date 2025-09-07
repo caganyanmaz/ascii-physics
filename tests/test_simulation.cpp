@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "engine/simulation.hpp"
 #include "engine/simulation_config.hpp"
+#include "engine/ode_solver.hpp"
+#include "engine/euler_ode_solver.hpp"
 #include "test_utils.hpp"
 
 using test_utils::vec2_near;
@@ -90,7 +92,7 @@ TEST(SimulationPublicTest, gravity_only_delta_potential_matches_mg_delta_y) {
     cfg.wind = false;
     cfg.gravitational_acceleration = 9.8; // +y is downward
 
-    auto p = make_particle(Vec2<double>(0.0, 0.0), Vec2<double>(0.0, 0.0), /*mass=*/2.0);
+    auto p = make_particle(Vec2<double>(0.0, 0.0), Vec2<double>(0.0, 0.0), 2.0);
     Simulation sim(std::move(cfg), std::vector<Particle>{p});
 
     const double dt = 0.1;
@@ -104,7 +106,7 @@ TEST(SimulationPublicTest, gravity_only_delta_potential_matches_mg_delta_y) {
     double y_after = sim.get_particles()[0].position.y;
 
     // ΔPE should be m * g * Δy with +y downward convention
-    double expected_delta_pe = 2.0 * 9.8 * (y_after - y_before);
+    double expected_delta_pe = 2.0 * (-9.8) * (y_after - y_before);
     EXPECT_NEAR(pe_after - pe_before, expected_delta_pe, 1e-6);
 
     // sanity: reported total energy equals KE + PE getters

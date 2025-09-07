@@ -96,11 +96,10 @@ double Simulation::get_dt_until_collision(double dt) {
 
 void Simulation::process_without_collisions(double dt) {
     auto [ y, dy ] = create_state_containers();
-    std::unique_ptr<OdeSolver> ode_solver = config.ode_solver_factory->make(y, dy, dt);
-
     clear_forces();
     add_forces();
     dump_state(y, dy);
+    std::unique_ptr<OdeSolver> ode_solver = config.ode_solver_factory->make(y, dy, dt);
 
     while (!ode_solver->is_over()) {
         ode_solver->step();
