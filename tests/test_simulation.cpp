@@ -4,38 +4,9 @@
 #include "engine/ode_solver.hpp"
 #include "engine/euler_ode_solver.hpp"
 #include "test_utils.hpp"
+#include "test_simulation_utils.hpp"
 
-using test_utils::vec2_near;
-using test_utils::TOL;
-
-static Particle make_particle(Vec2<double> pos, Vec2<double> vel, double mass = 1.0) {
-    Particle p;
-    p.position = pos;
-    p.velocity = vel;
-    p.mass = mass;
-    p.force_accumulator = Vec2<double>(0.0, 0.0);
-    return p;
-}
-
-#define MACHINE_EPSILON 1e-15
-TEST(SimulationTest, ParticleSimple) {
-    std::vector<Particle> particles;
-    Particle particle;
-    particle.velocity = Vec2(0.5, -0.1);
-    particles.push_back(std::move(particle));
-    SimulationConfig simulation_config;
-    simulation_config.gravity = false;
-    simulation_config.drag = false;
-    simulation_config.wind = false;
-    Simulation sim(std::move(simulation_config), std::move(particles));
-    for (int i = 0; i < 100; i++) {
-        sim.step(0.01);
-    }
-    ASSERT_EQ(sim.get_particles().size(), 1);
-    ASSERT_NEAR(sim.get_particles()[0].position.x, 0.5, 100 * MACHINE_EPSILON);
-    ASSERT_NEAR(sim.get_particles()[0].position.y, -0.1, 100 * MACHINE_EPSILON);
-}
-
+using namespace test_utils;
 
 
 TEST(SimulationPublicTest, constructs_and_exposes_particles) {

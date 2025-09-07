@@ -1,6 +1,7 @@
 #pragma once
 #include <gtest/gtest.h>
 #include "engine/math.hpp"
+
 #include <cmath>
 
 namespace test_utils {
@@ -16,4 +17,5 @@ namespace test_utils {
             << "Vec2 mismatch: (" << a.x << ", " << a.y << ") vs ("
             << b.x << ", " << b.y << "), tol=" << tol;
     }
-} 
+   
+}

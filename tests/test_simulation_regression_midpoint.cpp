@@ -3,15 +3,18 @@
 #include "engine/simulation_config.hpp"
 #include "engine/particle.hpp"
 #include "engine/ode_solver.hpp"
-#include "engine/euler_ode_solver.hpp"
+#include "engine/midpoint_ode_solver.hpp"
 #include "golden.hpp"
 #include <iomanip>
-
+#include <sstream>
+#include "test_utils.hpp"
 #include "test_simulation_utils.hpp"
+using namespace test_utils;
 
-TEST(SimulationRegression, simple_free_flight) {
-    SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false; 
-    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
+// 1) single-body free flight (no forces) with Midpoint
+TEST(SimulationRegressionMidpoint, simple_free_flight_midpoint) {
+    SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false;
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
 
     Particle p;
     p.position = {0.0, 0.0};
@@ -22,16 +25,13 @@ TEST(SimulationRegression, simple_free_flight) {
 
     for (int i = 0; i < 100; ++i) sim.step(0.01);
 
-    const std::string got = snapshot(sim);
-
-    golden::verify("sim/sim_free_flight.txt", got);
+    golden::verify("sim_midpoint/sim_free_flight_midpoint.txt", snapshot(sim));
 }
 
-
-// 1) two-body free flight (no forces): stable positions / velocities / totals
-TEST(SimulationRegression, free_flight_two_body) {
+// 2) two-body free flight (no forces)
+TEST(SimulationRegressionMidpoint, free_flight_two_body_midpoint) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false;
-    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
 
     std::vector<Particle> ps;
     ps.push_back(make_particle({0.0, 0.0}, {0.5, -0.1}, 1.0));
@@ -42,13 +42,13 @@ TEST(SimulationRegression, free_flight_two_body) {
     const double dt = 0.01;
     for (int i = 0; i < 250; ++i) sim.step(dt); // T=2.5
 
-    golden::verify("sim/free_flight_two_body.txt", snapshot(sim));
+    golden::verify("sim_midpoint/free_flight_two_body_midpoint.txt", snapshot(sim));
 }
 
-// 2) gravity drop (your +y downward): lock current integrator behavior
-TEST(SimulationRegression, gravity_drop_single) {
+// 3) gravity drop (your +y downward)
+TEST(SimulationRegressionMidpoint, gravity_drop_single_midpoint) {
     SimulationConfig cfg; cfg.gravity=true; cfg.drag=false; cfg.wind=false;
-    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
     cfg.gravitational_acceleration = 9.81;
 
     std::vector<Particle> ps;
@@ -59,13 +59,13 @@ TEST(SimulationRegression, gravity_drop_single) {
     const double dt = 0.02;
     for (int i = 0; i < 100; ++i) sim.step(dt); // T=2.0
 
-    golden::verify("sim/gravity_drop_single.txt", snapshot(sim));
+    golden::verify("sim_midpoint/gravity_drop_single_midpoint.txt", snapshot(sim));
 }
 
-// 3) wind impulse only: momentum change driven by wind every step
-TEST(SimulationRegression, wind_impulse_line) {
+// 4) wind impulse only
+TEST(SimulationRegressionMidpoint, wind_impulse_line_midpoint) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=true;
-    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
     cfg.wind_velocity = Vec2<double>(0.3, -0.15);
 
     std::vector<Particle> ps;
@@ -77,13 +77,13 @@ TEST(SimulationRegression, wind_impulse_line) {
     const double dt = 0.05;
     for (int i = 0; i < 60; ++i) sim.step(dt); // T=3.0
 
-    golden::verify("sim/wind_impulse_line.txt", snapshot(sim));
+    golden::verify("sim_midpoint/wind_impulse_line_midpoint.txt", snapshot(sim));
 }
 
-// 4) drag only: decay trajectory — we snapshot the whole state
-TEST(SimulationRegression, drag_decay) {
+// 5) drag only: decay trajectory
+TEST(SimulationRegressionMidpoint, drag_decay_midpoint) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=true; cfg.wind=false;
-    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
     cfg.drag_coefficient = -0.2;
 
     std::vector<Particle> ps;
@@ -93,13 +93,13 @@ TEST(SimulationRegression, drag_decay) {
     const double dt = 0.01;
     for (int i = 0; i < 400; ++i) sim.step(dt); // T=4.0
 
-    golden::verify("sim/drag_decay.txt", snapshot(sim));
+    golden::verify("sim_midpoint/drag_decay_midpoint.txt", snapshot(sim));
 }
 
-// 5) internal spring only (no gravity/wind/drag): oscillation snapshot
-TEST(SimulationRegression, spring_oscillation_two_body) {
+// 6) internal spring only (no gravity/wind/drag): oscillation snapshot
+TEST(SimulationRegressionMidpoint, spring_oscillation_two_body_midpoint) {
     SimulationConfig cfg; cfg.gravity=false; cfg.drag=false; cfg.wind=false;
-    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
 
     Particle a = make_particle({-0.5, 0.0}, { 0.0,  0.5}, 1.0);
     Particle b = make_particle({ 0.5, 0.0}, { 0.0, -0.5}, 1.5);
@@ -110,13 +110,13 @@ TEST(SimulationRegression, spring_oscillation_two_body) {
     const double dt = 0.005;
     for (int i = 0; i < 800; ++i) sim.step(dt); // T=4.0
 
-    golden::verify("sim/spring_oscillation_two_body.txt", snapshot(sim));
+    golden::verify("sim_midpoint/spring_oscillation_two_body_midpoint.txt", snapshot(sim));
 }
 
-// 6) mixed forces: gravity + drag + wind with two particles
-TEST(SimulationRegression, mixed_forces_two_body) {
+// 7) mixed forces: gravity + drag + wind with two particles
+TEST(SimulationRegressionMidpoint, mixed_forces_two_body_midpoint) {
     SimulationConfig cfg;
-    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
+    cfg.ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
     cfg.gravity = true;
     cfg.drag    = true;
     cfg.wind    = true;
@@ -133,5 +133,5 @@ TEST(SimulationRegression, mixed_forces_two_body) {
     const double dt = 0.01;
     for (int i = 0; i < 500; ++i) sim.step(dt); // T=5.0
 
-    golden::verify("sim/mixed_forces_two_body.txt", snapshot(sim));
+    golden::verify("sim_midpoint/mixed_forces_two_body_midpoint.txt", snapshot(sim));
 }
