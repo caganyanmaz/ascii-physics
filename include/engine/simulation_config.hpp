@@ -14,5 +14,4 @@ struct SimulationConfig {
     double particle_particle_restitution = 1;
     Vec2<double> wind_velocity = Vec2<double>(0.1, -0.1);
     std::unique_ptr<OdeSolverFactory> ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<EulerOdeSolver>>();
-    std::vector<std::unique_ptr<ForceGenerator>> additional_force_generators;
 };
