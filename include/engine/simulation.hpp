@@ -8,12 +8,11 @@
 #include <memory>
 
 class Simulation {
-    bool is_gravity_included;
+    const SimulationConfig config;
     std::vector<Particle> particles;
     std::vector<Surface> surfaces;
     std::vector<std::reference_wrapper<Particle>> static_particles;
     std::vector<std::reference_wrapper<Particle>> dynamic_particles;
-    const SimulationConfig config;
     std::vector<std::unique_ptr<ForceGenerator>> force_generators;
 public:
     Simulation(SimulationConfig&& config, std::vector<Particle>&& particles);
@@ -40,7 +39,7 @@ private:
     void process_collisions(Particle& particle, const Particle& particle_after_unit_time);
     void process_particle_particle_collision(Particle& particle, const Particle& other_particle);
     void process_particle_surface_collision(Particle& particle, const Surface& surface);
-    int get_state_vector_size()const;
+    size_t get_state_vector_size()const;
     double get_dt_until_collision(double dt);
     void flush_normals();
 };

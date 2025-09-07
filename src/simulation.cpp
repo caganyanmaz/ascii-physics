@@ -16,8 +16,7 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
 
 Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators) 
     :   config(std::move(config)), 
-        particles(std::move(particles)),
-        is_gravity_included(config.gravity)
+        particles(std::move(particles))
 {
     // Adding force generators
     if (config.gravity)
@@ -26,7 +25,7 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
         force_generators.push_back(std::unique_ptr<ForceGenerator>(new DragGenerator(config.drag_coefficient)));
     if (config.wind)
         force_generators.push_back(std::unique_ptr<ForceGenerator>(new WindGenerator(config.wind_velocity)));
-    for (int i = 0; i < additional_force_generators.size(); i++) {
+    for (size_t i = 0; i < additional_force_generators.size(); i++) {
         force_generators.push_back(std::move(additional_force_generators[i]));
     }
     additional_force_generators.clear();
@@ -75,7 +74,7 @@ double Simulation::get_dt_until_collision(double dt) {
     dump_state(tmp_y, tmp_dy);
     double l = 0, r = dt;
     std::vector<int> candidates;
-    for (int i = 0; i < particles.size(); i++) {
+    for (size_t i = 0; i < particles.size(); i++) {
         if (particles[i].fixed)
             candidates.push_back(i);    
     }
@@ -121,7 +120,7 @@ void Simulation::process_all_collisions() {
     std::vector<Particle> particles_after_unit_time = particles;
     load_state(y);
     clear_forces();
-    for (int i = 0; i < particles.size(); i++) {
+    for (size_t i = 0; i < particles.size(); i++) {
         if (particles[i].fixed) {
             continue;
         }
@@ -200,7 +199,6 @@ void Simulation::process_particle_surface_collision(Particle& particle, const Su
 
 void Simulation::process_particle_particle_collision(Particle& a, const Particle& b) {
     const Vec2<double> current_difference = a.position - b.position;
-    const double current_distance = current_difference.norm();
     const Vec2<double> relative_velocity  = a.velocity - b.velocity;
     const Vec2<double> normal             = current_difference.normalize();
     assert(normal * relative_velocity < 1e9);
@@ -231,9 +229,9 @@ std::pair<std::vector<double>, std::vector<double>> Simulation::create_state_con
 }
 
 void Simulation::dump_state(std::vector<double>& y, std::vector<double>& dy)const {
-    const int n = get_state_vector_size();
+    const size_t n = get_state_vector_size();
     assert(y.size() == n && dy.size() == n);
-    for (int i = 0; i < dynamic_particles.size(); i++) {
+    for (size_t i = 0; i < dynamic_particles.size(); i++) {
         const Particle& particle = dynamic_particles[i];
         y[i*PARTICLE_VECTOR_SIZE]    = particle.position.x;
         y[i*PARTICLE_VECTOR_SIZE+1]  = particle.position.y;
@@ -247,9 +245,9 @@ void Simulation::dump_state(std::vector<double>& y, std::vector<double>& dy)cons
 }
 
 void Simulation::load_state(const std::vector<double>& y) {
-    const int n = dynamic_particles.size() * PARTICLE_VECTOR_SIZE;
+    const size_t n = dynamic_particles.size() * PARTICLE_VECTOR_SIZE;
     assert(y.size() == n);
-    for (int i = 0; i < dynamic_particles.size(); i++) {
+    for (size_t i = 0; i < dynamic_particles.size(); i++) {
         Particle& particle = dynamic_particles[i];
         particle.position.x = y[i*PARTICLE_VECTOR_SIZE];
         particle.position.y = y[i*PARTICLE_VECTOR_SIZE+1];
@@ -258,7 +256,7 @@ void Simulation::load_state(const std::vector<double>& y) {
     }
 }
 
-int Simulation::get_state_vector_size()const {
+size_t Simulation::get_state_vector_size()const {
     return PARTICLE_VECTOR_SIZE * dynamic_particles.size();
 }
 
@@ -276,7 +274,7 @@ double Simulation::get_total_kinetic_energy()const {
 }
 
 double Simulation::get_total_potential_energy()const {
-    if (!is_gravity_included)
+    if (!config.gravity)
         return 0;
     double res = 0;
     for (const Particle& particle : particles) {

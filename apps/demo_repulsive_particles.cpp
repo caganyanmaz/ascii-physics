@@ -64,7 +64,7 @@ Simulation create_simulation() {
     std::vector<char> symbols({
         '.', '*', '+', 'x', 'o', 'O'
     });
-    std::vector<std::pair<int, double>> particle_repulsion_effects;
+    std::vector<std::pair<size_t, double>> particle_repulsion_effects;
     for (int i = 0; i < 10; i++) {
         Particle particle;
         particle.position = {(_random() - 0.5) * 7, _random() * 0.1 - 0.9};
@@ -73,7 +73,7 @@ Simulation create_simulation() {
         particle.radius = (_random() * 0.1);
         //particle.velocity = {_random() * 0.02 - 0.01, _random() * 0.02 - 0.01};
         particles.push_back(std::move(particle));
-        particle_repulsion_effects.push_back(std::make_pair(i, 1));
+        particle_repulsion_effects.push_back(std::make_pair(static_cast<size_t>(i), 1));
     }
     SimulationConfig simulation_config;
     simulation_config.wind = false;

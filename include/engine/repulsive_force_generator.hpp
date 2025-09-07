@@ -9,8 +9,8 @@
 #include <utility>
 
 class RepulsiveForceGenerator : public ForceGenerator {
-    const std::vector<std::pair<int, double>> affected_particles;
+    const std::vector<std::pair<size_t, double>> affected_particles;
 public:
-    RepulsiveForceGenerator(std::vector<std::pair<int, double>>&& affected_particles);
+    RepulsiveForceGenerator(std::vector<std::pair<size_t, double>>&& affected_particles);
     void generate(std::vector<Particle>& particles)override;
 };

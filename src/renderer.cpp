@@ -26,7 +26,7 @@ void Renderer::render(const std::vector<Particle>& particles) {
     clear_grid(particles);
 }
 
-void Renderer::add_spring(int a, int b) {
+void Renderer::add_spring(size_t a, size_t b) {
     springs.push_back({a, b});
 }
 
@@ -76,8 +76,8 @@ std::vector<Renderer::ActiveCell> Renderer::get_particle_cells(const Particle& p
 }
 
 
-std::vector<Renderer::ActiveCell> Renderer::get_spring_cells(const std::array<int, 2>& spring, const std::vector<Particle>& particles)const {
-    assert(0 <= spring[0] && spring[0] < particles.size() && 0 <= spring[1] && spring[1] < particles.size());
+std::vector<Renderer::ActiveCell> Renderer::get_spring_cells(const std::array<size_t, 2>& spring, const std::vector<Particle>& particles)const {
+    assert(spring[0] < particles.size() && spring[1] < particles.size());
     auto source = convert_to_screen_coordinates(particles[spring[0]].position);
     auto target = convert_to_screen_coordinates(particles[spring[1]].position);
     return get_line_cells(source, target, SPRING_CHAR);
@@ -94,11 +94,11 @@ std::vector<Renderer::ActiveCell> Renderer::get_line_cells(Vec2<int> source, Vec
         int next_y = current.y - 1 - source.y;
         int next_x = current.x + x_step - source.x;
         // x is first, hitting vertical wall (or hitting corner)
-        if (abs(next_y * dist.x) >= abs(next_x * dist.y)) { 
+        if (std::abs(next_y * dist.x) >= std::abs(next_x * dist.y)) { 
             current.x += x_step;
         } 
         // y is first hitting horizontal wall (or hitting corner)
-        if (abs(next_y * dist.x) <= abs(next_x * dist.y)) {
+        if (std::abs(next_y * dist.x) <= std::abs(next_x * dist.y)) {
             current.y--;
         }
     }
@@ -108,7 +108,7 @@ std::vector<Renderer::ActiveCell> Renderer::get_line_cells(Vec2<int> source, Vec
 
 std::vector<Renderer::ActiveCell> Renderer::get_all_active_cells(const std::vector<Particle>& particles)const {
     std::vector<ActiveCell> res;
-    for (const std::array<int, 2>& spring : springs) {
+    for (const std::array<size_t, 2>& spring : springs) {
         auto cells = get_spring_cells(spring, particles);
         res.insert(res.end(), cells.begin(), cells.end());
     }

@@ -15,14 +15,16 @@ class Renderer {
         char draw_symbol;
         ActiveCell(Vec2<int> position, char draw_symbol) : position(position), draw_symbol(draw_symbol) {}
     };
-    std::vector<char> grid;
-    std::vector<std::array<int, 2>> springs;
+    const int grid_width;
+    const int grid_height;
+    const int grid_multiplier;
     std::unique_ptr<Frame> frame;
-    const int grid_width, grid_height, grid_multiplier;
+    std::vector<char> grid;
+    std::vector<std::array<size_t, 2>> springs;
 public:
     void render(const std::vector<Particle>& particles);
     void debug_render(const std::vector<Particle>& particles)const;
-    void add_spring(int a, int b);
+    void add_spring(size_t a, size_t b);
     Renderer();
     Renderer(int grid_width, int grid_height, int grid_multiplier, std::unique_ptr<Frame> frame);
 private:
@@ -30,7 +32,7 @@ private:
     void render_grid();
     void clear_grid(const std::vector<Particle>& particles);
     bool is_in_range(Vec2<int> coordinate)const;
-    std::vector<ActiveCell> get_spring_cells(const std::array<int, 2>& spring, const std::vector<Particle>& particles)const;
+    std::vector<ActiveCell> get_spring_cells(const std::array<size_t, 2>& spring, const std::vector<Particle>& particles)const;
     std::vector<ActiveCell> get_particle_cells(const Particle& particle)const;
     std::vector<ActiveCell> get_line_cells(Vec2<int> source, Vec2<int> target, char line_char)const;
     std::vector<ActiveCell> get_all_active_cells(const std::vector<Particle>& particles)const;

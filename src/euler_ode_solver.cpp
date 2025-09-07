@@ -13,7 +13,7 @@ bool EulerOdeSolver::is_over()const {
 
 void EulerOdeSolver::end() {
     assert(y.size() == dy.size());
-    for (int i = 0; i < y.size(); i++) {
+    for (size_t i = 0; i < y.size(); i++) {
         y[i] += dy[i] * dt;
     }
 }
