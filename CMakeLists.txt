@@ -170,6 +170,11 @@ add_executable(demo_repulsive_particles apps/demo_repulsive_particles.cpp)
 target_link_libraries(demo_repulsive_particles PRIVATE engine)
 apply_no_inlining(demo_repulsive_particles)
 
+
+add_executable(demo_cloth apps/demo_cloth.cpp)
+target_link_libraries(demo_cloth PRIVATE engine)
+apply_no_inlining(demo_cloth)
+
 # ---------------------------------
 # Profiler convenience targets (Callgrind)
 # ---------------------------------

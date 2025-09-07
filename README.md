@@ -74,3 +74,13 @@ warm up the program, then:
 
 Directly call valgrind (fill callgrind.out.%p with appropriate file)
 > valgrind --tool=callgrind --callgrind-out-file=benchmarks/callgrind.out.%p ./build-prof/demo_ascii
+
+# Checking Test Coverage
+
+Run the following code: 
+
+> cmake -S . -B build-cov -G Ninja -DENABLE_TESTS=ON -DENABLE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug
+
+> cmake --build build-cov
+
+> cmake --build build-cov --target coverage
