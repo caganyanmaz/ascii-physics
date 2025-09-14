@@ -11,12 +11,13 @@
 
 constexpr static double COLLISION_TIME_ERROR_TOLERANCE = 1e-9;
 
-Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
-    : Simulation(std::move(config), std::move(particles), std::vector<std::unique_ptr<ForceGenerator>>()) {}
+//Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
+//    : Simulation(std::move(config), std::move(particles), std::vector<std::unique_ptr<ForceGenerator>>()) {}
 
-Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators) 
+Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators, std::vector<std::unique_ptr<Constraint>> constraints) 
     :   config(std::move(config)), 
-        particles(std::move(particles))
+        particles(std::move(particles)),
+        constraint_solver(std::move(constraints), this->particles.size(), config.constraint_spring_constant, config.constraint_damping_constant)
 {
     // Adding force generators
     if (config.gravity)
@@ -110,6 +111,7 @@ void Simulation::process_without_collisions(double dt) {
     }
     ode_solver->end();
     load_state(y);
+    constraint_solver.solve(particles);
 }
 
 void Simulation::process_all_collisions() {

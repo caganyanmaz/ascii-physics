@@ -4,6 +4,7 @@
 #include "drag_generator.hpp"
 #include "simulation_config.hpp"
 #include "ode_solver.hpp"
+#include "constraint_solver.hpp"
 #include <vector>
 #include <memory>
 
@@ -14,9 +15,10 @@ class Simulation {
     std::vector<std::reference_wrapper<Particle>> static_particles;
     std::vector<std::reference_wrapper<Particle>> dynamic_particles;
     std::vector<std::unique_ptr<ForceGenerator>> force_generators;
+    ConstraintSolver constraint_solver;
 public:
-    Simulation(SimulationConfig&& config, std::vector<Particle>&& particles);
-    Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators);
+    //Simulation(SimulationConfig&& config, std::vector<Particle>&& particles);
+    Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators = {}, std::vector<std::unique_ptr<Constraint>> constraints = {});
     void step(double dt);
     const std::vector<Particle>& get_particles()const;
     void add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length);

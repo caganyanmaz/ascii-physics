@@ -13,5 +13,7 @@ struct SimulationConfig {
     double particle_surface_restitution = 0.99;
     double particle_particle_restitution = 1;
     Vec2<double> wind_velocity = Vec2<double>(0.1, -0.1);
+    double constraint_damping_constant = 0.1;
+    double constraint_spring_constant = 1.0;
     std::unique_ptr<OdeSolverFactory> ode_solver_factory = std::make_unique<OdeSolverFactoryInstance<MidpointOdeSolver>>();
 };
