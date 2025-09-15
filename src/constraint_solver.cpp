@@ -1,14 +1,5 @@
 #include "engine/constraint_solver.hpp"
-#include <functional>
-
-constexpr static int DIMENSION_COUNT = 2;
-std::span<SparseMatrix::Block> get_block_subspan(std::span<SparseMatrix::Block> blocks, std::vector<int>& constraint_starts, int constraint_index);
-template<class T>
-std::vector<double> biconjugate_gradient_method_for_symmetric_matrix(T right_multiply, const std::vector<double>& b);
-
-// Temporary, add custom classes later
-double vector_dot(const std::vector<double>& a, const std::vector<double>& b);
-double vector_norm_squared(const std::vector<double>& v);
+#include "engine/detail/constraint_solver.hpp"
 
 ConstraintSolver::ConstraintSolver(std::vector<std::unique_ptr<Constraint>>&& constraints, int particle_count, double spring_constant, double damping_constant)
     : constraints(std::move(constraints)), 
@@ -19,7 +10,7 @@ ConstraintSolver::ConstraintSolver(std::vector<std::unique_ptr<Constraint>>&& co
         spring_constant(spring_constant),
         damping_constant(damping_constant) {
 
-    for (const std::unique_ptr<Constraint>& constraint : constraints) {
+    for (const std::unique_ptr<Constraint>& constraint : this->constraints) {
         j_constraint_starts.push_back(j.blocks.size());
         j_dot_constraint_starts.push_back(j.blocks.size());
         std::vector<SparseMatrix::Block> j_blocks = constraint->create_j_blocks();
@@ -62,8 +53,10 @@ void ConstraintSolver::solve(std::vector<Particle>& particles) {
     std::vector<double> J_dot_q_dot = j_dot.right_multiply_with_vector(q_dot);
     std::vector<double> b(constraints.size());
     for (int i = 0; i < b.size(); i++) {
-        b[i] = -J_dot_q_dot[i] - JWQ[i];
+        b[i] = -J_dot_q_dot[i] - JWQ[i] - spring_constant * c[i] - damping_constant * c_dot[i];
     }
+    // b = - J_dot q_dot - JWQ - k_s C - k_d C_dot
+    // x -> (JWJ^T)x
     auto right_multiply = [&] (const std::vector<double>& x) {
         std::vector<double> WJtx = j.right_multiply_transpose_with_vector(x);
         for (int i = 0; i < particles.size(); i++) {
@@ -85,9 +78,9 @@ constexpr static double TOL = 1e-9;
 // Right multiply should be a function that maps x -> Ax, where A is a symmetric matrix. Solves Ax = b for x
 // NOTE: For my use case, A is positive-semidefinite, so although the function would work with non-positive semidefinite matrices, 
 // I added some assertions for sanity-check, if used elsewhere, remove them
-template<class T>
+//template<class T>
 std::vector<double> biconjugate_gradient_method_for_symmetric_matrix(
-    T right_multiply, const std::vector<double>& b
+    const std::function<std::vector<double>(const std::vector<double>&)>& right_multiply, const std::vector<double>& b
 ) {
     const int n = b.size();
     std::vector<double> x(n, 0.0);
@@ -97,9 +90,10 @@ std::vector<double> biconjugate_gradient_method_for_symmetric_matrix(
     for (int i = 0; i < n; i++) {
         r[i] = b[i] - Ax[i];
     }
-    std::vector<double> p;
+    double norm_b = sqrt(vector_norm_squared(b));
+    std::vector<double> p = r;
     double last_r_norm_squared = vector_norm_squared(r);
-    for (int iter_count = 0; last_r_norm_squared >= TOL; iter_count++) { 
+    for (int iter_count = 0; sqrt(last_r_norm_squared) >= TOL * (1 + norm_b); iter_count++) { 
         assert(iter_count <= n);
         const std::vector<double> Ap = right_multiply(p);
         const double ptAp = vector_dot(p, Ap);
@@ -123,7 +117,7 @@ std::vector<double> biconjugate_gradient_method_for_symmetric_matrix(
 
 std::span<SparseMatrix::Block> get_block_subspan(std::span<SparseMatrix::Block> blocks, std::vector<int>& constraint_starts, int constraint_index) {
     int l = constraint_starts[constraint_index];
-    int r = constraint_index < constraint_starts.size() - 1 ? constraint_starts[constraint_index+1] : blocks.size();
+    int r = constraint_index < (constraint_starts.size() - 1) ? constraint_starts[constraint_index+1] : blocks.size();
     return blocks.subspan(l, r - l);
 }
 

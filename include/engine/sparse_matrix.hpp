@@ -2,8 +2,8 @@
 #include <vector>
 
 struct SparseMatrix {
-    int m;
-    int n;
+    const int m;
+    const int n;
     struct Block {
         int i;
         int j;

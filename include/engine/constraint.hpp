@@ -15,4 +15,5 @@ public:
     virtual void update_j_dot_blocks(const std::vector<Particle>& particles, std::span<SparseMatrix::Block> j_dot_blocks) = 0;
     virtual double return_c(const std::vector<Particle>& particles) = 0;
     virtual double return_c_dot(const std::vector<Particle>& particles) = 0;
+    virtual ~Constraint() = default;
 };
