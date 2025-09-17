@@ -97,7 +97,7 @@ TEST(ConstraintSolver, Solve_SingleYConstraint_AddsExpectedForce) {
     std::vector<std::unique_ptr<Constraint>> constraints;
     constraints.push_back(std::make_unique<MockYConstraint>(0, 0));
 
-    ConstraintSolver solver(std::move(constraints), /*particle_count=*/1, /*spring_constant=*/ks, /*damping_constant=*/kd);
+    ConstraintSolver solver(std::move(constraints), 1, ks, kd);
     solver.solve(particles);
 
     // Expected from JWJ^T = (1/m) for Y-constraint with J=[0 1],

@@ -12,7 +12,7 @@ ConstraintSolver::ConstraintSolver(std::vector<std::unique_ptr<Constraint>>&& co
 
     for (const std::unique_ptr<Constraint>& constraint : this->constraints) {
         j_constraint_starts.push_back(j.blocks.size());
-        j_dot_constraint_starts.push_back(j.blocks.size());
+        j_dot_constraint_starts.push_back(j_dot.blocks.size());
         std::vector<SparseMatrix::Block> j_blocks = constraint->create_j_blocks();
         std::vector<SparseMatrix::Block> j_dot_blocks = constraint->create_j_dot_blocks();
         for (SparseMatrix::Block& j_block : j_blocks) {
@@ -34,9 +34,9 @@ void ConstraintSolver::solve(std::vector<Particle>& particles) {
         c[i] = constraint->return_c(particles);
         c_dot[i] = constraint->return_c_dot(particles);
         std::span<SparseMatrix::Block> j_subspan = get_block_subspan(j_span, j_constraint_starts, i);
-        constraint->update_j_blocks(particles, j_span);
+        constraint->update_j_blocks(particles, j_subspan);
         std::span<SparseMatrix::Block> j_dot_subspan = get_block_subspan(j_dot_span, j_dot_constraint_starts, i);
-        constraint->update_j_blocks(particles, j_span);
+        constraint->update_j_dot_blocks(particles, j_dot_subspan);
     }
     // Solve J W J^{T} \lambda = - J_dot q_dot - J W Q for \lambda
     std::vector<double> WQ(DIMENSION_COUNT * particles.size());
