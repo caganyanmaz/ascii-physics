@@ -86,6 +86,7 @@ Simulation create_simulation() {
     return Simulation(
         std::move(simulation_config), 
         std::move(particles), 
+        {},
         std::move(extras)
     );
 }

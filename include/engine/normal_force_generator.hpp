@@ -5,5 +5,5 @@
 // Must be called after every other force calculation
 class NormalForceGenerator : public ForceGenerator {
 public:
-    void generate(std::vector<Particle>& particles)override;
+    void generate(std::vector<Particle>& particles, std::vector<RigidBody>& rigid_bodies)override;
 };

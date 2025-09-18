@@ -1,7 +1,8 @@
 #include "engine/normal_force_generator.hpp"
 #include <cassert>
 
-void NormalForceGenerator::generate(std::vector<Particle>& particles) {
+void NormalForceGenerator::generate(std::vector<Particle>& particles, std::vector<RigidBody>& rigid_bodies) {
+    // TODO: Add rigid body support
     for (Particle& particle : particles) {
         if (particle.fixed)
             continue;

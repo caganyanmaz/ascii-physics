@@ -1,6 +1,7 @@
 #include "engine/sparse_matrix.hpp"
 #include <cassert>
 #include "engine/detail/sparse_matrix.hpp"
+#include <cstddef>
 
 SparseMatrix::SparseMatrix(int m, int n) : m(m), n(n) {}
 

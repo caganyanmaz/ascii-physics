@@ -6,5 +6,5 @@ class DragGenerator : public ForceGenerator {
     const double drag_coefficient;
 public:
     DragGenerator(double drag_coefficient);
-    void generate(std::vector<Particle>& particles)override;
+    void generate(std::vector<Particle>& particles, std::vector<RigidBody>& rigid_bodies)override;
 };

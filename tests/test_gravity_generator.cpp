@@ -14,7 +14,8 @@ TEST(GravityGeneratorTest, ZeroMassParticleProducesNoForce) {
 
     GravityGenerator gravity(9.81);
     std::vector<Particle> particles{p};
-    gravity.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gravity.generate(particles, rigid_bodies);
 
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(0.1, 0.2)));
 }
@@ -27,7 +28,8 @@ TEST(GravityGeneratorTest, AppliesForceEqualToMassTimesG) {
     const double g = 9.81;
     GravityGenerator gravity(g);
     std::vector<Particle> particles{p};
-    gravity.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gravity.generate(particles, rigid_bodies);
 
     // +y is downward → (0, +19.62)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(0.0, 19.62)));
@@ -41,7 +43,8 @@ TEST(GravityGeneratorTest, AccumulatesOnExistingForces) {
     const double g = 10.0;
     GravityGenerator gravity(g);
     std::vector<Particle> particles{p};
-    gravity.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gravity.generate(particles, rigid_bodies);
 
     // delta = (0, +15.0) → (3.0, -1.0) + (0, 15.0) = (3.0, 14.0)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(3.0, 14.0)));
@@ -59,7 +62,8 @@ TEST(GravityGeneratorTest, DoesNotChangeOtherFields) {
 
     GravityGenerator gravity(9.81);
     std::vector<Particle> particles{p};
-    gravity.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gravity.generate(particles, rigid_bodies);
 
     EXPECT_TRUE(vec2_near(particles[0].position, Vec2<double>(5.0, 6.0)));
     EXPECT_TRUE(vec2_near(particles[0].velocity, Vec2<double>(-1.0, 2.0)));
@@ -77,7 +81,8 @@ TEST(GravityGeneratorTest, MultipleParticlesHandledIndependently) {
     const double g = 5.0;
     GravityGenerator gravity(g);
     std::vector<Particle> particles{p1, p2, p3};
-    gravity.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gravity.generate(particles, rigid_bodies);
 
     // p1: (0, +5.0)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(0.0, 5.0)));

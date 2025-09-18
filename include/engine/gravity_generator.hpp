@@ -6,5 +6,5 @@ class GravityGenerator : public ForceGenerator {
     const double gravitational_acceleration;
 public:
     GravityGenerator(double gravitational_acceleration);
-    void generate(std::vector<Particle>& particles)override;
+    void generate(std::vector<Particle>& particles, std::vector<RigidBody>& rigid_bodies)override;
 };

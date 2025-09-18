@@ -40,7 +40,8 @@ TEST(RepulsiveForceGenerator, TwoParticles_SymmetricOpposite_ForcesAtUnitDistanc
 
     // (index, repulsiveness)
     RepulsiveForceGenerator gen({{0, 2.0}, {1, 3.0}});
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     ASSERT_TRUE(vec2_near(particles[0].force_accumulator, {-6.0, 0.0}));
     ASSERT_TRUE(vec2_near(particles[1].force_accumulator, {+6.0, 0.0}));
@@ -65,7 +66,8 @@ TEST(RepulsiveForceGenerator, Superposition_ThreeParticles_AllUnitDistancesToCen
     particles.push_back(make_particle({0.0, 1.0})); // p2
 
     RepulsiveForceGenerator gen({{0, 1.5}, {1, 2.0}, {2, 4.0}});
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     // p0 expectation: only unit-distance contributions -> clean integers
     ASSERT_TRUE(vec2_near(particles[0].force_accumulator, {-3.0, -6.0}));
@@ -89,7 +91,8 @@ TEST(RepulsiveForceGenerator, Accumulates_WithoutOverwriting) {
     particles[1].force_accumulator = {-5.0, -2.0};
 
     RepulsiveForceGenerator gen({{0, 1.0}, {1, 1.0}});
-    gen.generate(particles); // unit distance => product 1, so (-1,0) and (+1,0) added
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies); // unit , distance => product 1, so (-1,0) and (+1,0) added
 
     ASSERT_TRUE(vec2_near(particles[0].force_accumulator, {9.0, 1.0}));
     ASSERT_TRUE(vec2_near(particles[1].force_accumulator, {-4.0, -2.0}));
@@ -105,7 +108,8 @@ TEST(RepulsiveForceGenerator, NonAffectedParticlesRemainUntouched) {
     particles[2].force_accumulator = {7.0, -3.0};
 
     RepulsiveForceGenerator gen({{0, 2.0}, {1, 3.0}}); // p2 not included
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     // p2 accumulator must not change
     ASSERT_TRUE(vec2_near(particles[2].force_accumulator, {7.0, -3.0}));
@@ -125,7 +129,8 @@ TEST(RepulsiveForceGenerator, DoesNotModifyOtherFields) {
     auto p1 = particles[1];
 
     RepulsiveForceGenerator gen({{0, 2.0}, {1, 3.0}});
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     // Only force_accumulator may change
     EXPECT_TRUE(vec2_near(particles[0].position,  p0.position));

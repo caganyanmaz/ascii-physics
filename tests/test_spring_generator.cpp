@@ -22,7 +22,8 @@ TEST(SpringGeneratorTest, applies_restoring_force_when_extended_no_damping) {
     const double damping_constant = 0.0;   
     SpringGenerator spring(0, 1, rest_length, spring_constant, damping_constant);
 
-    spring.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    spring.generate(particles, rigid_bodies);
 
     // l = (3,0), |l|=3, unit=(1,0)
     // term = k_s(|l|-r) = 10*(1) = 10
@@ -43,7 +44,8 @@ TEST(SpringGeneratorTest, applies_restoring_force_when_compressed_no_damping) {
     const double damping_constant = 0.0;   
     SpringGenerator spring(0, 1, rest_length, spring_constant, damping_constant);
 
-    spring.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    spring.generate(particles, rigid_bodies);
 
     // l = (1,0), |l|=1, unit=(1,0)
     // term = k_s(|l|-r) = 10*(-1) = -10
@@ -66,7 +68,8 @@ TEST(SpringGeneratorTest, includes_linear_damping_term_in_direction_of_l) {
     const double damping_constant = 2.0;   
     SpringGenerator spring(0, 1, rest_length, spring_constant, damping_constant);
 
-    spring.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    spring.generate(particles, rigid_bodies);
 
     // F_a = -12*(1,0) = (-12,0); F_b = (12,0)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(-12.0, 0.0)));
@@ -102,7 +105,8 @@ TEST(SpringGeneratorTest, accumulates_on_existing_forces_and_leaves_other_fields
     const double damping_constant = 0.0;
     SpringGenerator spring(0, 1, rest_length, spring_constant, damping_constant);
 
-    spring.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    spring.generate(particles, rigid_bodies);
 
     // term = k_s(|l|-r) = 10*(5-2) = 30
     // F_a = -30 * (0.6, 0.8) = (-18, -24)
@@ -137,7 +141,8 @@ TEST(SpringGeneratorTest, handles_unrelated_particles_untouched) {
     std::vector<Particle> particles{a, b, c};
 
     SpringGenerator spring(0, 1, 2.0, 10.0, 0.0);
-    spring.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    spring.generate(particles, rigid_bodies);
 
     // from first test: F_a = (-10, 0), F_b = (10, 0)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(-10.0, 0.0)));

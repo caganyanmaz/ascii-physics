@@ -16,7 +16,7 @@ RepulsiveForceGenerator::RepulsiveForceGenerator(std::vector<std::pair<size_t, d
 
 void repulse_particle(size_t a_idx, double a_repulsiveness, size_t b_idx, double b_repulsiveness, std::vector<Particle>& particles);
 
-void RepulsiveForceGenerator::generate(std::vector<Particle>& particles) {
+void RepulsiveForceGenerator::generate(std::vector<Particle>& particles, std::vector<RigidBody>& rigid_bodies) {
     for (auto [ a_idx, a_repulsiveness ] : affected_particles) {
         assert(a_idx < particles.size());
         for (auto [ b_idx, b_repulsiveness ] : affected_particles) {

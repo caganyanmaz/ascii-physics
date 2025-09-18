@@ -14,9 +14,10 @@ constexpr static double COLLISION_TIME_ERROR_TOLERANCE = 1e-9;
 //Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles) 
 //    : Simulation(std::move(config), std::move(particles), std::vector<std::unique_ptr<ForceGenerator>>()) {}
 
-Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators, std::vector<std::unique_ptr<Constraint>> constraints) 
+Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& particles, std::vector<RigidBody>&& rigid_bodies, std::vector<std::unique_ptr<ForceGenerator>>&& additional_force_generators, std::vector<std::unique_ptr<Constraint>> constraints) 
     :   config(std::move(config)), 
         particles(std::move(particles)),
+	    rigid_bodies(std::move(rigid_bodies)),
         constraint_solver(std::move(constraints), this->particles.size(), config.constraint_spring_constant, config.constraint_damping_constant)
 {
     // Adding force generators
@@ -49,6 +50,15 @@ Simulation::Simulation(SimulationConfig&& config, std::vector<Particle>&& partic
         } else {
             dynamic_particles.push_back(particle);
         }
+    }
+    
+    // Setting up rigid bodies
+    for (RigidBody& rigid_body : this->rigid_bodies) {
+	    if (rigid_body.fixed) {
+		    static_rigid_bodies.push_back(rigid_body);
+	    } else {
+		    dynamic_rigid_bodies.push_back(rigid_body);
+	    }
     }
 }
 
@@ -115,6 +125,7 @@ void Simulation::process_without_collisions(double dt) {
 }
 
 void Simulation::process_all_collisions() {
+	// TODO: Add rigid body collisions
     auto [ y, dy ] = create_state_containers();
     dump_state(y, dy);
     process_without_collisions(COLLISION_TIME_ERROR_TOLERANCE);
@@ -220,6 +231,7 @@ void Simulation::flush_normals() {
     for (Particle& particle : particles) {
         particle.flush_normals();
     }
+    // TODO: Add rigid body collisions
 }
 
 constexpr static int PARTICLE_VECTOR_SIZE = 4;
@@ -261,7 +273,6 @@ size_t Simulation::get_state_vector_size()const {
     return PARTICLE_VECTOR_SIZE * dynamic_particles.size();
 }
 
-
 double Simulation::get_total_energy()const {
     return get_total_kinetic_energy() + get_total_potential_energy();
 }
@@ -270,6 +281,10 @@ double Simulation::get_total_kinetic_energy()const {
     double res = 0;
     for (const Particle& particle : particles) {
         res += 0.5 * particle.mass * particle.velocity.norm_squared();
+    }
+    for (const RigidBody& rigid_body : rigid_bodies) {
+        res += 0.5 * rigid_body.mass * rigid_body.velocity.norm_squared();
+        res += 0.5 * rigid_body.inertia * rigid_body.angular_velocity * rigid_body.angular_velocity;
     }
     return res;
 }
@@ -280,6 +295,9 @@ double Simulation::get_total_potential_energy()const {
     double res = 0;
     for (const Particle& particle : particles) {
         res += particle.mass * (1 - particle.position.y) * config.gravitational_acceleration;
+    }
+    for (const RigidBody& rigid_body : rigid_bodies) {
+        res += rigid_body.mass * (1 - rigid_body.position.y) * config.gravitational_acceleration;
     }
     return res;
 }
@@ -296,6 +314,10 @@ const std::vector<Particle>& Simulation::get_particles()const {
     return particles;
 }
 
+const std::vector<RigidBody>& Simulation::get_rigid_bodies()const {
+    return rigid_bodies;
+}
+
 void Simulation::add_spring(int a_id, int b_id, double spring_constant, double damping_constant, double rest_length) {
     force_generators.push_back(std::unique_ptr<ForceGenerator>(new SpringGenerator(a_id, b_id, spring_constant, damping_constant, rest_length)));
 }
@@ -304,10 +326,14 @@ void Simulation::clear_forces() {
     for (Particle& particle : particles) {
         particle.force_accumulator = Vec2<double>(0, 0);
     }
+    for (RigidBody& rigid_body : rigid_bodies) {
+        rigid_body.force_accumulator = Vec2<double>(0, 0);
+        rigid_body.torque_accumulator = 0;
+    }
 }
 
 void Simulation::add_forces() {    
     for (std::unique_ptr<ForceGenerator>& force_generator : force_generators) {
-        force_generator->generate(particles);
+        force_generator->generate(particles, rigid_bodies);
     }
 }

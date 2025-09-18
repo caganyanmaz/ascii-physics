@@ -12,7 +12,8 @@ TEST(WindGeneratorTest, zero_wind_yields_no_force) {
 
     WindGenerator wind(Vec2<double>(0.0, 0.0));
     std::vector<Particle> particles{p};
-    wind.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    wind.generate(particles, rigid_bodies);
 
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(0.3, -0.4)));
 }
@@ -23,7 +24,8 @@ TEST(WindGeneratorTest, adds_wind_vector_to_force_accumulator) {
 
     WindGenerator wind(Vec2<double>(1.2, -0.5));
     std::vector<Particle> particles{p};
-    wind.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    wind.generate(particles, rigid_bodies);
 
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(1.2, -0.5)));
 }
@@ -34,7 +36,8 @@ TEST(WindGeneratorTest, accumulates_on_existing_force) {
 
     WindGenerator wind(Vec2<double>(-0.3, 0.7));
     std::vector<Particle> particles{p};
-    wind.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    wind.generate(particles, rigid_bodies);
 
     // (2.0, -1.0) + (-0.3, 0.7) = (1.7, -0.3)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(1.7, -0.3)));
@@ -52,7 +55,8 @@ TEST(WindGeneratorTest, does_not_modify_other_particle_state) {
 
     WindGenerator wind(Vec2<double>(0.5, -0.25));
     std::vector<Particle> particles{p};
-    wind.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    wind.generate(particles, rigid_bodies);
 
     // only force_accumulator changes
     EXPECT_TRUE(vec2_near(particles[0].position, p.position));
@@ -70,7 +74,8 @@ TEST(WindGeneratorTest, handles_multiple_particles_independently) {
 
     WindGenerator wind(Vec2<double>(0.5, -0.25));
     std::vector<Particle> particles{p1, p2, p3};
-    wind.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    wind.generate(particles, rigid_bodies);
 
     // p1: (0.0, 0.0) + (0.5, -0.25) = (0.5, -0.25)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(0.5, -0.25)));

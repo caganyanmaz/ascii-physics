@@ -15,7 +15,8 @@ TEST(DragGeneratorTest, ZeroVelocity_YieldsNoForce) {
     DragGenerator drag(drag_coefficient);
 
     std::vector<Particle> particles{p};
-    drag.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    drag.generate(particles, rigid_bodies);
 
     // unchanged
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(0.1, -0.2)));
@@ -30,7 +31,8 @@ TEST(DragGeneratorTest, AppliesOpposingForce_ProportionalToSpeedTimesVelocity) {
     DragGenerator drag(drag_coefficient);
 
     std::vector<Particle> particles{p};
-    drag.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    drag.generate(particles, rigid_bodies);
 
     // ΔF = k * |v| * v = -0.1 * 5 * (3, 4) = (-1.5, -2.0)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(-1.5, -2.0)));
@@ -50,7 +52,8 @@ TEST(DragGeneratorTest, AccumulatesIntoExistingForces) {
     DragGenerator drag(drag_coefficient);
 
     std::vector<Particle> particles{p};
-    drag.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    drag.generate(particles, rigid_bodies);
 
     // k*|v| = -0.25 * sqrt(5) ≈ -0.5590169943749475
     // ΔF = (-0.5590169943749475) * (-2.0, 1.0) = (1.118033988749895, -0.5590169943749475)
@@ -72,7 +75,8 @@ TEST(DragGeneratorTest, DoesNotModifyOtherParticleState) {
     DragGenerator drag(drag_coefficient);
 
     std::vector<Particle> particles{p};
-    drag.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    drag.generate(particles, rigid_bodies);
 
     // position/velocity/mass/radius/symbol/fixed unchanged
     EXPECT_TRUE(vec2_near(particles[0].position, p.position));
@@ -92,7 +96,8 @@ TEST(DragGeneratorTest, HandlesMultipleParticlesIndependently) {
     DragGenerator drag(drag_coefficient);
 
     std::vector<Particle> particles{p1, p2, p3};
-    drag.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    drag.generate(particles, rigid_bodies);
 
     // p1: |v|=2 → ΔF = -0.5*2*(2,0) = (-2.0, 0.0)
     EXPECT_TRUE(vec2_near(particles[0].force_accumulator, Vec2<double>(-2.0, 0.0)));

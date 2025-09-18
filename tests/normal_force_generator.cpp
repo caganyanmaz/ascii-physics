@@ -11,7 +11,8 @@ TEST(NormalForceGenerator, RegularZeroNormals_NoChange) {
 
     std::vector<Particle> particles{p};
     NormalForceGenerator gen;
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     EXPECT_NEAR(particles[0].force_accumulator.x, 3.0, TOL);
     EXPECT_NEAR(particles[0].force_accumulator.y, 4.0, TOL);
@@ -25,7 +26,8 @@ TEST(NormalForceGenerator, RegularOneNormal_IntoSurface_ComponentCanceled_AxisAl
 
     std::vector<Particle> particles{p};
     NormalForceGenerator gen;
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     // y pushed into surface -> canceled; tangential x preserved
     EXPECT_NEAR(particles[0].force_accumulator.x, 5.0, TOL);
@@ -46,7 +48,8 @@ TEST(NormalForceGenerator, RegularOneNormal_TangentOnly_Unchanged) {
 
     std::vector<Particle> particles{p};
     NormalForceGenerator gen;
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     EXPECT_NEAR(particles[0].force_accumulator.x, 5.0, TOL);
     EXPECT_NEAR(particles[0].force_accumulator.y, 0.0, TOL);
@@ -61,7 +64,8 @@ TEST(NormalForceGenerator, RegularOneNormal_ObliqueNormal_IntoSurface_ComponentC
 
     std::vector<Particle> particles{p};
     NormalForceGenerator gen;
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     // Hard-coded math:
     // t = dot(F, n) = (2*0.70710678) + (-10*0.70710678) = (-8)/sqrt(2) ≈ -5.656854249
@@ -83,7 +87,8 @@ TEST(NormalForceGenerator, RegularOneNormal_NearTolerance_SmallIntoSurface_NoCha
 
     std::vector<Particle> particles{p};
     NormalForceGenerator gen;
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     EXPECT_NEAR(particles[0].force_accumulator.x, 1.0, TOL);
     EXPECT_NEAR(particles[0].force_accumulator.y, -1e-10, TOL);
@@ -95,7 +100,8 @@ TEST(NormalForceGenerator, RegularZeroNormals_ZeroForce_NoChange) {
 
     std::vector<Particle> particles{p};
     NormalForceGenerator gen;
-    gen.generate(particles);
+    std::vector<RigidBody> rigid_bodies{};
+    gen.generate(particles, rigid_bodies);
 
     EXPECT_NEAR(particles[0].force_accumulator.x, 0.0, TOL);
     EXPECT_NEAR(particles[0].force_accumulator.y, 0.0, TOL);

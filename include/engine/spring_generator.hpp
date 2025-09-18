@@ -7,5 +7,5 @@ private:
     double rest_length, spring_constant, damping_constant;
 public:
     SpringGenerator(size_t a_id, size_t b_id, double rest_length, double spring_constant, double damping_constant);
-    void generate(std::vector<Particle>& particles)override;
+    void generate(std::vector<Particle>& particles, std::vector<RigidBody>& rigid_bodies)override;
 };

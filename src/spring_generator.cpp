@@ -4,7 +4,7 @@
 SpringGenerator::SpringGenerator(size_t a_id, size_t b_id, double rest_length, double spring_constant, double damping_constant)
     : a_id(a_id), b_id(b_id), rest_length(rest_length), spring_constant(spring_constant), damping_constant(damping_constant) {}
 
-void SpringGenerator::generate(std::vector<Particle>& particles) {  
+void SpringGenerator::generate(std::vector<Particle>& particles, std::vector<RigidBody>& rigid_bodies) {  
     assert(a_id < particles.size() && b_id < particles.size());
     Vec2<double> I        = particles[a_id].position - particles[b_id].position;
     Vec2<double> diff_I   = particles[a_id].velocity - particles[b_id].velocity;
